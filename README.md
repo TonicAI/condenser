@@ -12,7 +12,9 @@ Configuration must exist in `config.json`. There is an example configuration pro
 
 *desired_result*: JSON object containing a *"table"* and *"percent"* fields to specify desired end result.  Also contains *"required_pks"* an array of primary keys for table that must be included.
 
-*max_tries*: Number of iterations of binary search to find optimal input table size.
+*max_tries*: Number of iterations of binary search to find optimal input table size. We recommend 10.
+
+Database configuration must exist in `.destination_db_connection_info` and `.source_db_connection_info`. An example is in `example_db_connection_info`. The password field may be omitted, which will cause the program to prompt for a password.
 
 # To Run
 ```bash
