@@ -1,0 +1,6 @@
+.destination_db_connection_info
+.source_db_connection_info
+__pycache__/
+.vscode/
+config.json
+SQL/

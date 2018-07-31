@@ -1,0 +1,25 @@
+{
+    "passthrough_threshold": 50,
+    "passthrough_tables": [
+        "table_of_settings", "table_of_constants"
+    ],
+    "dependency_breaks": [
+        {"parent": "table2", "child": "table3"}
+    ],
+    "tables": [
+        "target_table",
+        "table1",
+        "table2",
+        "table3",
+        "table_etc",
+        "table_of_constants",
+        "table_of_settings"
+    ],
+
+    "desired_result": {
+        "table": "target_table",
+        "percent": 1
+    },
+
+    "max_tries": 10
+ }
