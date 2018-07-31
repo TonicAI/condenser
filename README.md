@@ -21,6 +21,10 @@ Database configuration must exist in `.destination_db_connection_info` and `.sou
 python main.py
 ```
 
+# Known Issues
+
+* Only works for Postgres for tables in the "public" schema.
+
 # (Optional) Start Docker Container:
 
 This starts a docker container which you can use as a destination database.
