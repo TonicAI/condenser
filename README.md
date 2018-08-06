@@ -1,3 +1,9 @@
+# Condenser
+
+Condenser is a config-driven database subsetting tool.
+
+Subsetting a database means to take a subset of its rows, across multiple tables, while still maintaining all of the constraints of the original database.  
+
 # Config
 
 Configuration must exist in `config.json`. There is an example configuration provided in `example-config.json`. Below we describe the use of all configuration parameters.
@@ -24,6 +30,8 @@ python main.py
 # Known Issues
 
 * Only works for Postgres for tables in the "public" schema.
+
+* Only works with bigint, non-compound primary and foreign keys.
 
 # (Optional) Start Docker Container:
 
