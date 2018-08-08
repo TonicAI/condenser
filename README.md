@@ -4,6 +4,8 @@ Condenser is a config-driven database subsetting tool.
 
 Subsetting a database means to take a subset of its rows, across multiple tables, while still maintaining all of the constraints of the original database.  
 
+You can find more details about how we built this here: https://www.tonic.ai/blog/condenser-a-database-subsetting-tool
+
 # Config
 
 Configuration must exist in `config.json`. There is an example configuration provided in `example-config.json`. Below we describe the use of all configuration parameters.
