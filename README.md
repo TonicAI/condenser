@@ -50,3 +50,5 @@ To confirm it is running:
 ```bash
 docker ps
 ```
+# Requirements
+Reference the requirements.txt file for a list of required python packages.  Also, please note that python3.6 is required.
