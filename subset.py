@@ -94,7 +94,7 @@ class Subset:
             parent_name = r['parent_table_name']
             fk_name = r['fk_column_name']
 
-            q=f'SELECT {fk_name} FROM "{self.schema}"."{parent_name}"'
+            q=f'SELECT "{fk_name}" FROM "{self.schema}"."{parent_name}"'
             database_helper.copy_rows(self.__destination_conn, self.__destination_conn, q, temp_table_name, self.temp_schema)
 
         cursor = self.__destination_conn.cursor()
@@ -138,6 +138,6 @@ class Subset:
                     columns_to_null.add(rel['fk_column_name'])
 
             columns = database_helper.get_table_columns(table, self.schema, self.__source_conn)
-            return ','.join([c if c not in columns_to_null else f'NULL as "{c}"' for c in columns])
+            return ','.join([f'"{c}"' if c not in columns_to_null else f'NULL as "{c}"' for c in columns])
         else:
             return '*'

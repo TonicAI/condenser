@@ -1,7 +1,10 @@
 import os, uuid, csv
 from config_reader import ConfigReader
 from pathlib import Path
-from psycopg2.extras import execute_values
+from psycopg2.extras import execute_values, register_default_json, register_default_jsonb
+
+register_default_json(loads=lambda x: x)
+register_default_jsonb(loads=lambda x: x)
 
 def copy_rows(source, destination, query, destination_table, destination_schema):
     cursor = source.cursor()

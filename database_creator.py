@@ -95,7 +95,8 @@ class DatabaseCreator:
             'ADD CONSTRAINT',
             'CREATE INDEX',
             'CREATE UNIQUE INDEX',
-            'CREATE TRIGGER'
+            'CREATE TRIGGER',
+            'COMMENT ON CONSTRAINT'
         ]
 
         with open(os.path.join(output_path,'schema_dump.sql'), 'r') as fp:
