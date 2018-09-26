@@ -15,26 +15,36 @@ Configuration must exist in `config.json`. There is an example configuration pro
 
 *passthrough_threshold*: Integer specifying maximum number of rows a table can contain to be automatically considered as a passthrough table. Leave empty to disable.
 
-*passthrough_tables*: Array of strings of all tables to be passthrough-ed
+*passthrough_tables*: Tables (and their respective schema) that will be copied to destination database without subsetting.
+
+*excluded_tables*: Tables (and their respective schema) that will be excluded from the subset.  All other tables found in non-system schema will be subsetted.
 
 *dependency_breaks*: An array containg a JSON object with *"parent"* and *"child"* fields of table relationships to be ignored in order to break cycles
 
-*tables*: All tables to consider.  Do not need to replicate passthrough tables in this list.
+*desired_result*: JSON object containing a *"table"*, *"schema"* and *"percent"* fields to specify desired end result.
 
-*desired_result*: JSON object containing a *"table"* and *"percent"* fields to specify desired end result.  Also contains *"required_pks"* an array of primary keys for table that must be included.
+*max_tries*: Number of iterations of binary search to find optimal input table size. We recommend 10.  This is only applicable when using the iterative approach (see next section).
 
-*max_tries*: Number of iterations of binary search to find optimal input table size. We recommend 10.
-
-Database configuration must exist in `.destination_db_connection_info` and `.source_db_connection_info`. An example is in `example_db_connection_info`. The password field may be omitted, which will cause the program to prompt for a password.
+*destination_db_connection* and *source_db_connection* contain the connection details for the destination and source databases.  The password field may be omitted, which will cause the program to prompt for a password.
 
 # To Run
+We are currently supporting two different subsetting algorithms.
+
+To run the direct approach:
 ```bash
-python main.py
+pythong direct_subset.py
 ```
+
+To run the iterative approach:
+```bash
+python iterative_subset.py
+```
+
+We suggest you first try the direct approach and if it does not yield good results try the iterative.
 
 # Known Issues
 
-* Only works for Postgres for tables in the "public" schema.
+* ~~Only works for Postgres for tables in the "public" schema.~~
 
 * Only works with bigint, non-compound primary and foreign keys.
 

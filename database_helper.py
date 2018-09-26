@@ -1,5 +1,5 @@
 import os, uuid, csv
-from config_reader import ConfigReader
+import config_reader
 from pathlib import Path
 from psycopg2.extras import execute_values, register_default_json, register_default_jsonb
 
@@ -36,20 +36,15 @@ def create_id_temp_table(conn, schema, col_type):
     cursor.close()
     return table_name
 
-def get_referenced_tables(table_name, conn):
-    t = ConfigReader().get_all_tables()
-    return [r for r in get_fk_relationships(conn) if r['parent_table_name']==table_name and r['child_table_name'] in t]
+def get_referencing_tables(table_name, tables, conn):
+    return [r for r in get_fk_relationships(tables, conn) if r['child_table_name']==table_name]
 
-def get_referencing_tables(table_name, conn):
-    t = ConfigReader().get_all_tables()
-    return [r for r in get_fk_relationships(conn) if r['child_table_name']==table_name and r['parent_table_name'] in t]
-
-def get_fk_relationships(conn):
+def get_fk_relationships(tables, conn):
     cur = conn.cursor()
 
     q = """
     SELECT
-        tc.table_name as table_name,
+        concat(concat(tc.table_schema, '.'),tc.table_name) as table_name,
         kcu.column_name as column_name,
         ccu.table_name AS underlying_table_name,
         ccu.column_name AS underlying_column_name
@@ -60,7 +55,7 @@ def get_fk_relationships(conn):
         JOIN
                 (SELECT
                     constraint_name,
-                    min(table_name) AS table_name,
+                    concat(concat(min(table_schema),'.'),min(table_name)) AS table_name,
                     min(column_name) AS column_name
                 FROM information_schema.constraint_column_usage
                 GROUP BY
@@ -80,7 +75,9 @@ def get_fk_relationships(conn):
         d['fk_column_name'] = row[1]
         d['child_table_name'] = row[2]
         d['pk_column_name'] = row[3]
-        relationships.append( d )
+
+        if d['parent_table_name'] in tables and d['child_table_name'] in tables:
+            relationships.append( d )
 
     cur.close()
     return relationships
@@ -92,11 +89,26 @@ def run_query(query, conn):
 
 
 def get_table_count(table_name, schema, conn):
-    with  conn.cursor() as cur:
+    with conn.cursor() as cur:
         cur.execute(f'SELECT COUNT(*) FROM "{schema}"."{table_name}"')
         return cur.fetchone()[0]
 
 def get_table_columns(table, schema, conn):
     with conn.cursor() as cur:
         cur.execute(f"SELECT column_name FROM information_schema.columns WHERE table_schema = '{schema}' AND table_name = '{table}'")
+        return [r[0] for r in cur.fetchall()]
+
+def list_all_user_schemas(conn):
+    with conn.cursor() as cur:
+        cur.execute("select nspname from pg_catalog.pg_namespace where nspname not like 'pg_%' and nspname != 'information_schema';")
+        return [r[0] for r in cur.fetchall()]
+
+def list_all_tables(conn):
+    with conn.cursor() as cur:
+        cur.execute(f"""SELECT
+                            concat(concat(table_schema,'.'),table_name)
+                        FROM
+                            information_schema.tables
+                        WHERE
+                            table_schema NOT IN ('information_schema', 'pg_catalog');""")
         return [r[0] for r in cur.fetchall()]

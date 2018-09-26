@@ -1,37 +1,52 @@
-import json
+import json, sys
 
-class ConfigReader:
-    class __ConfigReader:
-        def __init__(self):
-            with open('config.json','r') as fp:
-                self.config = json.load(fp)
+_config = None
 
-        def get_passthrough_threshold(self):
-            return self.config['passthrough_threshold']
+def initialize(file_like = None):
+    global _config
+    if _config != None:
+        print('Attempted to initialize configuration twice.')
+        sys.exit(1)
 
-        def get_passthrough_tables(self):
-            return list(self.config['passthrough_tables'])
+    if not file_like:
+        with open('config.json', 'r') as fp:
+            _config = json.load(fp)
+    else:
+        _config = json.load(file_like)
 
-        def get_tables(self):
-            return list(self.config['tables'])
+def get_passthrough_threshold():
+    return _config['passthrough_threshold']
 
-        def get_all_tables(self):
-            return list(self.config['tables'] + self.config['passthrough_tables'])
+def get_dependency_breaks():
+    return list(_config['dependency_breaks'])
 
-        def get_dependency_breaks(self):
-            return list(self.config['dependency_breaks'])
+def get_target_table():
+    return _config['desired_result']['schema'] + '.' + _config['desired_result']['table']
 
-        def get_desired_result(self):
-            return dict(self.config['desired_result'])
+def get_target_percent():
+    return _config['desired_result']['percent']
 
-        def get_max_tries(self):
-            return self.config['max_tries']
+def get_max_tries():
+    return _config['max_tries']
 
-    instance = None
-    def __init__(self):
-        if not ConfigReader.instance:
-            ConfigReader.instance = ConfigReader.__ConfigReader()
+def get_source_db_connection_info():
+    return _config['source_db_connection_info']
 
-    def __getattr__(self, name):
-        return getattr(self.instance, name)
+def get_destination_db_connection_info():
+    return _config['destination_db_connection_info']
 
+def get_excluded_tables():
+    info = _config['excluded_tables']
+    tables = list()
+    for group in info:
+        for t in group['tables']:
+            tables.append(f"{group['schema']}.{t}")
+    return tables
+
+def get_passthrough_tables():
+    info = _config['passthrough_tables']
+    tables = list()
+    for group in info:
+        for t in group['tables']:
+            tables.append(f"{group['schema']}.{t}")
+    return tables

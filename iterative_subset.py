@@ -1,15 +1,15 @@
+import uuid
+import result_tabulator, config_reader
 from subset import Subset
 from database_creator import DatabaseCreator
 from db_connect import DbConnect
-from config_reader import ConfigReader
 from subset_result_norm import SubsetResultNorm
 from scipy.optimize import bisect
-from result_tabulator import SubsetResultFunc
+from database_helper import list_all_tables
 
-source_dbc = DbConnect('.source_db_connection_info')
-destination_dbc = DbConnect('.destination_db_connection_info')
-temp_schema = 'subset'
-schema = 'public'
+# Get list of tables to operate on
+all_tables = list_all_tables(source_dbc.get_db_connection())
+all_tables = [x for x in all_tables if x not in config_reader.get_excluded_tables()]
 
 def func(percent, lower_limit, lower_limit_norm, upper_limit, upper_limit_norm):
 
@@ -25,23 +25,23 @@ def func_base(percent):
     database = DatabaseCreator(source_dbc, destination_dbc, temp_schema, False)
 
     database.teardown()
-
     database.create()
     database.validate_database_create()
 
-    s = Subset(source_dbc, destination_dbc, percent, temp_schema)
-    s.run_downward()
+    s = Subset(source_dbc, destination_dbc, temp_schema, all_tables)
+
+    s.run_downward(percent)
 
     database.add_constraints()
     database.validate_constraints()
 
-    norm = SubsetResultNorm(source_dbc, destination_dbc, 'public').norm()
+    norm = SubsetResultNorm(source_dbc, destination_dbc).norm()
 
     print(percent, norm)
     return norm
 
 def compute_fast_limits():
-    desired_result = ConfigReader().get_desired_result()['percent']
+    desired_result = config_reader.get_target_percent()
     upper_limit_guess = desired_result
 
     last_result = desired_result
@@ -56,14 +56,20 @@ def compute_fast_limits():
     return (lower_limit_guess, last_result, upper_limit_guess, result)
 
 if __name__ == '__main__':
+    config_reader.initialize()
+
+    source_dbc = DbConnect(config_reader.get_source_db_connection_info())
+    destination_dbc = DbConnect(config_reader.get_destination_db_connection_info())
+    temp_schema = 'subset_' + str(uuid.uuid4()).replace('-','')
+
 
     lower_limit, lower_limit_norm, upper_limit, upper_limit_norm = compute_fast_limits()
-    max_tries = ConfigReader().get_max_tries()
+    max_tries = config_reader.get_max_tries()
 
     try:
         bisect(func, lower_limit, upper_limit, maxiter=max_tries, args=(lower_limit, lower_limit_norm, upper_limit, upper_limit_norm))
     except:
         pass
 
-    SubsetResultFunc(source_dbc, destination_dbc, schema).tabulate()
+    result_tabulator.tabulate(source_dbc, destination_dbc, all_tables)
 

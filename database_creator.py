@@ -1,13 +1,14 @@
 import os
 from db_connect import DbConnect
-from config_reader import ConfigReader
 from psql_runner import PsqlRunner
 from psql_runner import get_pg_bin_path
+from database_helper import list_all_user_schemas
 
 class DatabaseCreator:
     def __init__(self, source_dbc, destination_dbc, temp_schema, use_existing_dump = False):
         self.destination_connection_info = destination_dbc.get_db_connection_info()
         self.source_connection_info = source_dbc.get_db_connection_info()
+        self.__source_db_connection = source_dbc.get_db_connection()
 
         self.use_existing_dump = use_existing_dump
         self.destination_psql_client = PsqlRunner(self.destination_connection_info)
@@ -40,10 +41,6 @@ class DatabaseCreator:
         if self.use_existing_dump == True:
             pass
         else:
-
-            tt = ConfigReader().get_all_tables()
-            tables = ' '.join(['-t ' + t for t in tt])
-
             cur_path = os.getcwd()
 
             pg_dump_path = get_pg_bin_path()
@@ -51,8 +48,8 @@ class DatabaseCreator:
                 os.chdir(pg_dump_path)
 
             pg_dumpsql_path = os.path.join(self.output_path, 'schema_dump.sql')
-            os.system('pg_dump --dbname=postgresql://{0}:{1}@{2}:{3}/{4} > {5} --schema-only --no-owner --no-privileges {6}'
-                .format(self.source_connection_info['user_name'], self.source_connection_info['password'], self.source_connection_info['host'], self.source_connection_info['port'], self.source_connection_info['db_name'], pg_dumpsql_path, tables))
+            os.system('pg_dump --dbname=postgresql://{0}:{1}@{2}:{3}/{4} > {5} --schema-only --no-owner --no-privileges'
+                .format(self.source_connection_info['user_name'], self.source_connection_info['password'], self.source_connection_info['host'], self.source_connection_info['port'], self.source_connection_info['db_name'], pg_dumpsql_path))
 
             os.chdir(cur_path)
 
@@ -60,10 +57,23 @@ class DatabaseCreator:
             self.destination_psql_client.run(os.path.join(self.output_path, 'dump_create.sql'), self.create_output_path, self.create_error_path, True, True)
 
     def teardown(self):
-        q = 'DROP SCHEMA public CASCADE;CREATE SCHEMA public;GRANT ALL ON SCHEMA public TO postgres;GRANT ALL ON SCHEMA public TO public;'
+        user_schemas = list_all_user_schemas(self.__source_db_connection)
+
+        if len(user_schemas) == 0:
+            raise Exception("Couldn't find any non system schemas.")
+
+
+
+
+        drop_statements = [f"DROP SCHEMA IF EXISTS {s} CASCADE;" for s in user_schemas if s != 'public']
+
+        q = ';'.join(drop_statements)
+        q += "DROP SCHEMA IF EXISTS public CASCADE;CREATE SCHEMA IF NOT EXISTS public;"
+
         self.destination_psql_client.run_query(q)
 
-        q = f'DROP SCHEMA IF EXISTS {self.temp_schema} CASCADE;CREATE SCHEMA IF NOT EXISTS {self.temp_schema};GRANT ALL ON SCHEMA {self.temp_schema} TO postgres;GRANT ALL ON SCHMA {self.temp_schema} TO public;'
+        q = f'DROP SCHEMA IF EXISTS {self.temp_schema} CASCADE;CREATE SCHEMA IF NOT EXISTS {self.temp_schema};'
+        self.destination_psql_client.run_query(q)
 
     def add_constraints(self):
         self.destination_psql_client.run(os.path.join(self.output_path, 'dump_constraints_unique.sql'), self.add_constraint_output_path,  self.add_constraint_error_path, False, False )
@@ -96,7 +106,8 @@ class DatabaseCreator:
             'CREATE INDEX',
             'CREATE UNIQUE INDEX',
             'CREATE TRIGGER',
-            'COMMENT ON CONSTRAINT'
+            'COMMENT ON CONSTRAINT',
+            'COMMENT ON EXTENSION'
         ]
 
         with open(os.path.join(output_path,'schema_dump.sql'), 'r') as fp:

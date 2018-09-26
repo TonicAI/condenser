@@ -5,13 +5,21 @@ import getpass
 
 class DbConnect:
 
-    def __init__(self, config_file):
+    def __init__(self, connection_info):
+        requiredKeys = [
+            'user_name',
+            'host',
+            'db_name',
+            'port'
+        ]
 
-        if not os.path.isfile(config_file):
-            raise Exception(f'Missing {config_file} file')
+        for r in requiredKeys:
+            if r not in connection_info.keys():
+                raise Exception('Missing required key in database connection info: ' + r)
+        if 'password' not in connection_info.keys():
+            connection_info['password'] = getpass.getpass('Enter password for {0} on host {1}: '.format(connection_info['user_name'], connection_info['host']))
 
-        self.config_file = config_file
-        self.__set_db_connection_info()
+        self.connection_info = connection_info
 
     def get_db_connection(self):
 
@@ -26,28 +34,6 @@ class DbConnect:
             connection_string = connection_string + ' sslmode={0}'.format(ssl_mode)
 
         return psycopg2.connect(connection_string)
-
-    def __set_db_connection_info(self):
-        requiredKeys = [
-            'user_name',
-            'host',
-            'db_name',
-            'port'
-        ]
-
-        try:
-            with open(self.config_file, 'r') as fp:
-                ci = json.load(fp)
-        except json.decoder.JSONDecodeError:
-            raise Exception(f'Could not process {self.config_file}')
-
-        for r in requiredKeys:
-            if r not in ci.keys():
-                raise Exception('Missing required key in .db_connection_info: ' + r)
-        if 'password' not in ci.keys():
-            ci['password'] = getpass.getpass('Enter password for {0} on host {1}: '.format(ci['user_name'], ci['host']))
-
-        self.connection_info = ci
 
     def get_db_connection_info(self):
         return self.connection_info
