@@ -32,7 +32,7 @@ We are currently supporting two different subsetting algorithms.
 
 To run the direct approach:
 ```bash
-pythong direct_subset.py
+python direct_subset.py
 ```
 
 To run the iterative approach:
