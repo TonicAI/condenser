@@ -37,14 +37,12 @@ python direct_subset.py
 
 To run the iterative approach (*this approach has been deprecated*):
 ```bash
-python iterative_subset.py
+python deprecated_iterative_subset.py
 ```
 
 We suggest you first try the direct approach. The iterative approach is still around, as described in our blog post, but it may fail to converge in realworld scenarios.
 
 # Known Issues
-
-* ~~Only works for Postgres for tables in the "public" schema.~~
 
 * Only works with bigint, non-compound primary and foreign keys.
 
