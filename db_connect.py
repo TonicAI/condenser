@@ -28,8 +28,9 @@ class DbConnect:
         db_name = self.connection_info['db_name']
         ssl_mode = self.connection_info['ssl_mode'] if 'ssl_mode' in self.connection_info else None
         password = self.connection_info['password']
+        port = self.connection_info['port']
 
-        connection_string = 'dbname={0} user={1} password={2} host={3}'.format(db_name, user_name, password, host)
+        connection_string = 'dbname={0} user={1} password={2} host={3} port={4}'.format(db_name, user_name, password, host, port)
         if ssl_mode :
             connection_string = connection_string + ' sslmode={0}'.format(ssl_mode)
 

@@ -1,4 +1,4 @@
-import os
+import os, urllib
 from db_connect import DbConnect
 from psql_runner import PsqlRunner
 from psql_runner import get_pg_bin_path
@@ -48,8 +48,8 @@ class DatabaseCreator:
                 os.chdir(pg_dump_path)
 
             pg_dumpsql_path = os.path.join(self.output_path, 'schema_dump.sql')
-            os.system('pg_dump --dbname=postgresql://{0}:{1}@{2}:{3}/{4} > {5} --schema-only --no-owner --no-privileges'
-                .format(self.source_connection_info['user_name'], self.source_connection_info['password'], self.source_connection_info['host'], self.source_connection_info['port'], self.source_connection_info['db_name'], pg_dumpsql_path))
+            os.system('pg_dump --dbname=postgresql://{0}@{2}:{3}/{4}?{1} > {5} --schema-only --no-owner --no-privileges'
+                    .format(self.source_connection_info['user_name'], urllib.parse.urlencode({'password': self.source_connection_info['password']}), self.source_connection_info['host'], self.source_connection_info['port'], self.source_connection_info['db_name'], pg_dumpsql_path))
 
             os.chdir(cur_path)
 
@@ -65,14 +65,14 @@ class DatabaseCreator:
 
 
 
-        drop_statements = [f"DROP SCHEMA IF EXISTS {s} CASCADE;" for s in user_schemas if s != 'public']
+        drop_statements = ["DROP SCHEMA IF EXISTS {} CASCADE;".format(s) for s in user_schemas if s != 'public']
 
         q = ';'.join(drop_statements)
         q += "DROP SCHEMA IF EXISTS public CASCADE;CREATE SCHEMA IF NOT EXISTS public;"
 
         self.destination_psql_client.run_query(q)
 
-        q = f'DROP SCHEMA IF EXISTS {self.temp_schema} CASCADE;CREATE SCHEMA IF NOT EXISTS {self.temp_schema};'
+        q = 'DROP SCHEMA IF EXISTS {schema} CASCADE;CREATE SCHEMA IF NOT EXISTS {schema};'.format(schema=self.temp_schema)
         self.destination_psql_client.run_query(q)
 
     def add_constraints(self):
@@ -88,7 +88,7 @@ class DatabaseCreator:
             fp.close()
 
         if len(lines) > 0:
-            raise Exception(f'Creating tables failed.  See {self.create_error_path} for details')
+            raise Exception('Creating tables failed.  See {} for details'.format(self.create_error_path))
 
     def validate_constraints(self):
         with open(self.add_constraint_error_path,'r',encoding='utf-8') as fp:
@@ -96,7 +96,7 @@ class DatabaseCreator:
             fp.close()
 
         if len(lines) > 0:
-            raise Exception(f'Adding constraints failed.  See {self.add_constraint_error_path} for details')
+            raise Exception('Adding constraints failed.  See {} for details'.format(self.add_constraint_error_path))
 
     def __filter_commands(self, output_path):
 
@@ -149,7 +149,7 @@ class DatabaseCreator:
                     create_unique_commands.append(c)
                 elif c.find('PRIMARY KEY') != -1:
                     pk_commands.append(c)
-                else:
+                elif c.find('COMMENT') == -1:
                     other_commands.append(c)
 
         save_path = os.path.join(output_path, 'dump_create.sql')

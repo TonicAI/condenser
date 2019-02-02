@@ -7,10 +7,6 @@ from subset_result_norm import SubsetResultNorm
 from scipy.optimize import bisect
 from database_helper import list_all_tables
 
-# Get list of tables to operate on
-all_tables = list_all_tables(source_dbc.get_db_connection())
-all_tables = [x for x in all_tables if x not in config_reader.get_excluded_tables()]
-
 def func(percent, lower_limit, lower_limit_norm, upper_limit, upper_limit_norm):
 
     if percent == lower_limit:
@@ -61,6 +57,10 @@ if __name__ == '__main__':
     source_dbc = DbConnect(config_reader.get_source_db_connection_info())
     destination_dbc = DbConnect(config_reader.get_destination_db_connection_info())
     temp_schema = 'subset_' + str(uuid.uuid4()).replace('-','')
+
+    # Get list of tables to operate on
+    all_tables = list_all_tables(source_dbc.get_db_connection())
+    all_tables = [x for x in all_tables if x not in config_reader.get_excluded_tables()]
 
 
     lower_limit, lower_limit_norm, upper_limit, upper_limit_norm = compute_fast_limits()

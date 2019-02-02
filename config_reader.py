@@ -21,7 +21,7 @@ def get_dependency_breaks():
     return list(_config['dependency_breaks'])
 
 def get_target_table():
-    return _config['desired_result']['schema'] + '.' + _config['desired_result']['table']
+    return _config['desired_result']['target']
 
 def get_target_percent():
     return _config['desired_result']['percent']
@@ -36,17 +36,7 @@ def get_destination_db_connection_info():
     return _config['destination_db_connection_info']
 
 def get_excluded_tables():
-    info = _config['excluded_tables']
-    tables = list()
-    for group in info:
-        for t in group['tables']:
-            tables.append(f"{group['schema']}.{t}")
-    return tables
+    return list(_config['excluded_tables'])
 
 def get_passthrough_tables():
-    info = _config['passthrough_tables']
-    tables = list()
-    for group in info:
-        for t in group['tables']:
-            tables.append(f"{group['schema']}.{t}")
-    return tables
+    return list(_config['passthrough_tables'])

@@ -21,7 +21,7 @@ class Subset:
         order = get_topological_order_by_tables(relationships, self.__all_tables)
         order = list(reversed(order))
 
-        database_helper.run_query(f'CREATE SCHEMA IF NOT EXISTS {self.temp_schema}', self.__destination_conn)
+        database_helper.run_query('CREATE SCHEMA IF NOT EXISTS {}'.format(self.temp_schema), self.__destination_conn)
 
         if len(order)==0:
             return
@@ -34,12 +34,12 @@ class Subset:
 
         for t in sampled_tables:
             columns_query = self.__columns_to_copy(t, relationships)
-            q = f'SELECT {columns_query} FROM "{schema_name(t)}"."{table_name(t)}" WHERE random() < {scalePercent/100}'
+            q = 'SELECT {} FROM "{}"."{}" WHERE random() < {}'.format(columns_query, schema_name(t), table_name(t), scalePercent/100)
             database_helper.copy_rows(self.__source_conn, self.__destination_conn, q, table_name(t), schema_name(t))
 
         for t in passthrough_tables:
             #copy passthrough tables directly to new database
-            q = f'SELECT * FROM "{schema_name(t)}"."{table_name(t)}"'
+            q = 'SELECT * FROM "{}"."{}"'.format(schema_name(t), table_name(t))
             database_helper.copy_rows(self.__source_conn, self.__destination_conn, q, table_name(t), schema_name(t))
 
         for c in range(1, len(order)):
@@ -50,14 +50,16 @@ class Subset:
 
                 self.subset_via_parents(t, relationships)
 
-        database_helper.run_query(f'DROP SCHEMA IF EXISTS {self.temp_schema} CASCADE', self.__destination_conn)
+        database_helper.run_query('DROP SCHEMA IF EXISTS {} CASCADE'.format(self.temp_schema), self.__destination_conn)
 
     def run_middle_out(self):
         relationships = database_helper.get_fk_relationships(self.__all_tables, self.__source_conn)
-        order = get_topological_order_by_tables(relationships, self.__all_tables)
+        disconnected_tables = compute_disconnected_tables(config_reader.get_target_table(), self.__all_tables, relationships)
+        connected_tables = [table for table in self.__all_tables if table not in disconnected_tables]
+        order = get_topological_order_by_tables(relationships, connected_tables)
         order = list(order)
 
-        database_helper.run_query(f'CREATE SCHEMA IF NOT EXISTS {self.temp_schema}', self.__destination_conn)
+        database_helper.run_query('CREATE SCHEMA IF NOT EXISTS {}'.format(self.temp_schema), self.__destination_conn)
 
         # randomly sample the targets, per their target percentage
         targets = compute_targets(config_reader.get_target_table(), order)
@@ -65,9 +67,9 @@ class Subset:
         start_time = time.time()
         for t in targets:
             columns_query = self.__columns_to_copy(t, relationships)
-            q = f'SELECT {columns_query} FROM "{schema_name(t)}"."{table_name(t)}" WHERE random() < {targets[t]/100}'
+            q = 'SELECT {} FROM "{}"."{}" WHERE random() < {}'.format(columns_query, schema_name(t), table_name(t), targets[t]/100)
             database_helper.copy_rows(self.__source_conn, self.__destination_conn, q, table_name(t), schema_name(t))
-        print(f'Direct target tables completed in {time.time()-start_time}s')
+        print('Direct target tables completed in {}s'.format(time.time()-start_time))
 
 
         # greedily grab as many downstream rows as the target strata can support
@@ -78,7 +80,7 @@ class Subset:
         for t in downstream_tables:
             self.__subset_greedily(t, processed_tables, relationships)
             processed_tables.add(t)
-        print(f'Greedy subsettings completed in {time.time()-start_time}s')
+        print('Greedy subsettings completed in {}s'.format(time.time()-start_time))
 
 
         # use subset_via_parents to get all supporting rows according to existing needs
@@ -87,8 +89,18 @@ class Subset:
         start_time = time.time()
         for t in upstream_tables:
             self.subset_via_parents(t, relationships)
-        print(f'Upstream subsetting completed in {time.time()-start_time}s')
+        print('Upstream subsetting completed in {}s'.format(time.time()-start_time))
 
+        # get all the data for tables in disconnected components (i.e. pass those tables through)
+        print("Beginning pass-through of tables disconnected from the main component: " + str(disconnected_tables))
+        start_time = time.time()
+        for t in disconnected_tables:
+            q = 'SELECT * FROM "{}"."{}"'.format(schema_name(t), table_name(t))
+            database_helper.copy_rows(self.__source_conn, self.__destination_conn, q, table_name(t), schema_name(t))
+        print('Disconnected tables completed in {}s'.format(time.time()-start_time))
+
+        # clean out the temp schema
+        database_helper.run_query('DROP SCHEMA IF EXISTS {} CASCADE;'.format(self.temp_schema), self.__destination_conn)
 
     def __subset_greedily(self, target, processed_tables, relationships):
 
@@ -98,20 +110,20 @@ class Subset:
         try:
             # copy the whole table
             columns_query = self.__columns_to_copy(target, relationships)
-            database_helper.run_query(f'CREATE TABLE "{self.temp_schema}"."{temp_target_name}" AS SELECT * FROM "{schema_name(target)}"."{table_name(target)}" LIMIT 0', destination_conn)
-            query = f'SELECT {columns_query} FROM "{schema_name(target)}"."{table_name(target)}"'
+            database_helper.run_query('CREATE TABLE "{}"."{}" AS SELECT * FROM "{}"."{}" LIMIT 0'.format(self.temp_schema, temp_target_name, schema_name(target), table_name(target)), destination_conn)
+            query = 'SELECT {} FROM "{}"."{}"'.format(columns_query, schema_name(target), table_name(target))
             database_helper.copy_rows(self.__source_conn, destination_conn, query, temp_target_name, self.temp_schema)
 
             # filter it down in the target database
             relevant_key_constraints = list(filter(lambda r: r["child_table_name"] in processed_tables and r["parent_table_name"] == target, relationships))
-            clauses = map(lambda kc: f"\"{temp_target_name}\".\"{kc['fk_column_name']}\" IN (SELECT \"{kc['pk_column_name']}\" FROM \"{schema_name(kc['child_table_name'])}\".\"{table_name(kc['child_table_name'])}\")", relevant_key_constraints)
-            query = f'SELECT * FROM \"{self.temp_schema}\".\"{temp_target_name}\" WHERE TRUE AND {" AND ".join(clauses)}'
-            database_helper.run_query(f'INSERT INTO "{schema_name(target)}"."{table_name(target)}" {query}', destination_conn)
+            clauses = map(lambda kc: "\"{}\".\"{}\" IN (SELECT \"{}\" FROM \"{}\".\"{}\")".format(temp_target_name, kc['fk_column_name'], kc['pk_column_name'], schema_name(kc['child_table_name']), table_name(kc['child_table_name'])), relevant_key_constraints)
+            query = 'SELECT * FROM \"{}\".\"{}\" WHERE TRUE AND {}'.format(self.temp_schema, temp_target_name, " AND ".join(clauses))
+            database_helper.run_query('INSERT INTO "{}"."{}" {}'.format(schema_name(target), table_name(target), query), destination_conn)
             destination_conn.commit()
 
         finally:
             # delete temporary table
-            database_helper.run_query(f'DROP TABLE IF EXISTS "{self.temp_schema}"."{temp_target_name}"', destination_conn)
+            database_helper.run_query('DROP TABLE IF EXISTS "{}"."{}"'.format(self.temp_schema, temp_target_name), destination_conn)
             destination_conn.close()
 
 
@@ -157,32 +169,32 @@ class Subset:
             parent_table = r['parent_table_name']
             fk_name = r['fk_column_name']
 
-            q=f'SELECT "{fk_name}" FROM "{schema_name(parent_table)}"."{table_name(parent_table)}"'
+            q='SELECT "{}" FROM "{}"."{}"'.format(fk_name, schema_name(parent_table), table_name(parent_table))
             database_helper.copy_rows(self.__destination_conn, self.__destination_conn, q, temp_table_name, self.temp_schema)
 
         cursor = self.__destination_conn.cursor()
         cursor_name='table_cursor_'+str(uuid.uuid4()).replace('-','')
-        q =f'DECLARE {cursor_name} SCROLL CURSOR FOR SELECT DISTINCT t FROM "{self.temp_schema}"."{temp_table_name}"'
+        q ='DECLARE {} SCROLL CURSOR FOR SELECT DISTINCT t FROM "{}"."{}"'.format(cursor_name, self.temp_schema, temp_table_name)
         cursor.execute(q)
         fetch_row_count = 10000
         while True:
-            cursor.execute(f'FETCH FORWARD {fetch_row_count} FROM {cursor_name}')
+            cursor.execute('FETCH FORWARD {} FROM {}'.format(fetch_row_count, cursor_name))
             if cursor.rowcount == 0:
                 break
 
-            ids = [str(row[0]) for row in cursor.fetchall() if row[0] is not None]
+            ids = ["'" + str(row[0]) + "'" for row in cursor.fetchall() if row[0] is not None]
 
             if len(ids) == 0:
                 break
 
             ids_to_query = ','.join(ids)
             columns_query = self.__columns_to_copy(table, relationships)
-            q = f'SELECT {columns_query} FROM "{schema_name(table)}"."{table_name(table)}" WHERE {pk_name} IN ({ids_to_query})'
+            q = 'SELECT {} FROM "{}"."{}" WHERE {} IN ({})'.format(columns_query, schema_name(table), table_name(table), pk_name, ids_to_query)
             temp_destination_conn = self.__destination_dbc.get_db_connection()
             database_helper.copy_rows(self.__source_conn, temp_destination_conn, q, table_name(table), schema_name(table))
             temp_destination_conn.close()
 
-        cursor.execute(f'CLOSE {cursor_name}')
+        cursor.execute('CLOSE {}'.format(cursor_name))
         cursor.close()
 
     # this function generally copies all columns as is, but if the table has been selected as
@@ -200,7 +212,7 @@ class Subset:
                 columns_to_null.add(rel['fk_column_name'])
 
         columns = database_helper.get_table_columns(table_name(table), schema_name(table), self.__source_conn)
-        return ','.join([f'"{table_name(table)}"."{c}"' if c not in columns_to_null else f'NULL as "{c}"' for c in columns])
+        return ','.join(['"{}"."{}"'.format(table_name(table), c) if c not in columns_to_null else 'NULL as "{}"'.format(c) for c in columns])
 
 def find(f, seq):
     """Return first item in sequence where f(item) == True."""
@@ -235,8 +247,92 @@ def compute_upstream_tables(target_table, order):
         upstream_tables.extend(strata)
     return upstream_tables
 
+def compute_disconnected_tables(target_table, all_tables, relationships):
+    uf = UnionFind()
+    for rel in relationships:
+        uf.link(rel['parent_table_name'], rel['child_table_name'])
+    target_component = set(uf.members_of(target_table))
+    return [t for t in all_tables if t not in target_component]
+
 def schema_name(table):
     return table.split('.')[0]
 
 def table_name(table):
     return table.split('.')[1]
+
+class UnionFind:
+
+    def __init__(self):
+        self.elementsToId = dict()
+        self.elements = []
+        self.roots = []
+        self.ranks = []
+
+    def __len__(self):
+        return len(self.roots)
+
+    def make_set(self, elem):
+        self.id_of(elem)
+
+    def find(self, elem):
+        x = self.elementsToId[elem]
+        if x == None:
+            return None
+
+        rootId = self.find_internal(x)
+        return self.elements[rootId]
+
+    def find_internal(self, x):
+        x0 = x
+        while self.roots[x] != x:
+            x = self.roots[x]
+
+        while self.roots[x0] != x:
+            y = self.roots[x0]
+            self.roots[x0] = x
+            x0 = y
+
+        return x
+
+    def id_of(self, elem):
+        if elem not in self.elementsToId:
+            idx = len(self.roots)
+            self.elements.append(elem)
+            self.elementsToId[elem] = idx
+            self.roots.append(idx)
+            self.ranks.append(0)
+
+        return self.elementsToId[elem]
+
+    def link(self, elem1, elem2):
+        x = self.id_of(elem1)
+        y = self.id_of(elem2)
+
+        xr = self.find_internal(x)
+        yr = self.find_internal(y)
+        if xr == yr:
+            return
+
+        xd = self.ranks[xr]
+        yd = self.ranks[yr]
+        if xd < yd:
+            self.roots[xr] = yr
+        elif yd < xd:
+            self.roots[yr] = xr
+        else:
+            self.roots[yr] = xr
+            self.ranks[xr] = self.ranks[xr] + 1
+
+    def members_of(self, elem):
+        id = self.elementsToId[elem]
+        if id is None:
+            raise ValueError("tried calling membersOf on an unknown element")
+
+        elemRoot = self.find_internal(id)
+        retval = []
+        for idx in range(len(self.elements)):
+            otherRoot = self.find_internal(idx)
+            if elemRoot == otherRoot:
+                retval.append(self.elements[idx])
+
+        return retval

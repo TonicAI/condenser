@@ -9,29 +9,29 @@ register_default_jsonb(loads=lambda x: x)
 def copy_rows(source, destination, query, destination_table, destination_schema):
     cursor = source.cursor()
     cursor_name='table_cursor_'+str(uuid.uuid4()).replace('-','')
-    q =f'DECLARE {cursor_name} SCROLL CURSOR FOR {query}'
+    q ='DECLARE {} SCROLL CURSOR FOR {}'.format(cursor_name, query)
     cursor.execute(q)
 
     fetch_row_count = 10000
     while True:
-        cursor.execute(f'FETCH FORWARD {fetch_row_count} FROM {cursor_name}')
+        cursor.execute('FETCH FORWARD {} FROM {}'.format(fetch_row_count, cursor_name))
         if cursor.rowcount == 0:
             break
 
         destination_cursor = destination.cursor()
 
-        execute_values(destination_cursor, f'INSERT INTO "{destination_schema}"."{destination_table}" VALUES %s', cursor.fetchall())
+        execute_values(destination_cursor, 'INSERT INTO "{}"."{}" VALUES %s'.format(destination_schema, destination_table), cursor.fetchall())
 
         destination_cursor.close()
 
-    cursor.execute(f'CLOSE {cursor_name}')
+    cursor.execute('CLOSE {}'.format(cursor_name))
     cursor.close()
     destination.commit()
 
 def create_id_temp_table(conn, schema, col_type):
     table_name = 'temp_table_' + str(uuid.uuid4())
     cursor = conn.cursor()
-    q = f'CREATE TABLE "{schema}"."{table_name}" (\n t    {col_type}\n)'
+    q = 'CREATE TABLE "{}"."{}" (\n t    {}\n)'.format(schema, table_name, col_type)
     cursor.execute(q)
     cursor.close()
     return table_name
@@ -85,17 +85,18 @@ def get_fk_relationships(tables, conn):
 def run_query(query, conn):
     cur = conn.cursor()
     cur.execute(query)
+    conn.commit()
     cur.close()
 
 
 def get_table_count(table_name, schema, conn):
     with conn.cursor() as cur:
-        cur.execute(f'SELECT COUNT(*) FROM "{schema}"."{table_name}"')
+        cur.execute('SELECT COUNT(*) FROM "{}"."{}"'.format(schema, table_name))
         return cur.fetchone()[0]
 
 def get_table_columns(table, schema, conn):
     with conn.cursor() as cur:
-        cur.execute(f"SELECT column_name FROM information_schema.columns WHERE table_schema = '{schema}' AND table_name = '{table}'")
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_schema = '{}' AND table_name = '{}'".format(schema, table))
         return [r[0] for r in cur.fetchall()]
 
 def list_all_user_schemas(conn):
@@ -105,10 +106,10 @@ def list_all_user_schemas(conn):
 
 def list_all_tables(conn):
     with conn.cursor() as cur:
-        cur.execute(f"""SELECT
+        cur.execute("""SELECT
                             concat(concat(table_schema,'.'),table_name)
                         FROM
                             information_schema.tables
                         WHERE
-                            table_schema NOT IN ('information_schema', 'pg_catalog');""")
+                            table_schema NOT IN ('information_schema', 'pg_catalog') AND table_type = 'BASE TABLE';""")
         return [r[0] for r in cur.fetchall()]

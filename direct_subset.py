@@ -1,4 +1,4 @@
-import uuid
+import uuid, sys
 import config_reader, result_tabulator
 from subset import Subset
 from database_creator import DatabaseCreator
@@ -6,8 +6,10 @@ from db_connect import DbConnect
 from database_helper import list_all_tables
 
 if __name__ == '__main__':
-
-    config_reader.initialize()
+    if "--stdin" in sys.argv:
+        config_reader.initialize(sys.stdin)
+    else:
+        config_reader.initialize()
 
     source_dbc = DbConnect(config_reader.get_source_db_connection_info())
     destination_dbc = DbConnect(config_reader.get_destination_db_connection_info())
@@ -28,8 +30,9 @@ if __name__ == '__main__':
     s = Subset(source_dbc, destination_dbc, temp_schema, all_tables)
     s.run_middle_out()
 
-    database.add_constraints()
-    database.validate_constraints()
+    if "--no-constraints" not in sys.argv:
+        database.add_constraints()
+        database.validate_constraints()
 
     result_tabulator.tabulate(source_dbc, destination_dbc, all_tables)
 

@@ -12,7 +12,7 @@ def tabulate(source_dbc, destination_dbc, tables):
             n = database_helper.get_table_count(table_name(table), schema_name(table), conn)
         row_counts.append((table,o,n))
 
-    print('\n'.join([f'{x[0]}, {x[1]}, {x[2]}, {x[2]/x[1] if x[1] > 0 else 0}' for x in row_counts]))
+    print('\n'.join(['{}, {}, {}, {}'.format(x[0], x[1], x[2], x[2]/x[1] if x[1] > 0 else 0) for x in row_counts]))
 
 
 def schema_name(table):
