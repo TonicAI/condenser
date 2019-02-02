@@ -43,13 +43,13 @@ def compute_fast_limits():
     last_result = desired_result
     lower_limit_guess = 0
     result = func_base(upper_limit_guess)
-    while result > 0:
+    while result > 0 and upper_limit_guess < 100:
         lower_limit_guess = upper_limit_guess
         upper_limit_guess *= 2
         last_result = result
         result = func_base(upper_limit_guess)
 
-    return (lower_limit_guess, last_result, upper_limit_guess, result)
+    return (lower_limit_guess, last_result, min(upper_limit_guess, 100), result)
 
 if __name__ == '__main__':
     config_reader.initialize()

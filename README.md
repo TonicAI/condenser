@@ -35,12 +35,12 @@ To run the direct approach:
 python direct_subset.py
 ```
 
-To run the iterative approach:
+To run the iterative approach (*this approach has been deprecated*):
 ```bash
 python iterative_subset.py
 ```
 
-We suggest you first try the direct approach and if it does not yield good results try the iterative.
+We suggest you first try the direct approach. The iterative approach is still around, as described in our blog post, but it may fail to converge in realworld scenarios.
 
 # Known Issues
 
