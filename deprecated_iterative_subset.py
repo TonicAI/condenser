@@ -22,14 +22,12 @@ def func_base(percent):
 
     database.teardown()
     database.create()
-    database.validate_database_create()
 
     s = Subset(source_dbc, destination_dbc, temp_schema, all_tables)
 
     s.run_downward(percent)
 
     database.add_constraints()
-    database.validate_constraints()
 
     norm = SubsetResultNorm(source_dbc, destination_dbc).norm()
 

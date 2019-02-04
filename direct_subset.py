@@ -20,7 +20,6 @@ if __name__ == '__main__':
     database = DatabaseCreator(source_dbc, destination_dbc, temp_schema, False)
     database.teardown()
     database.create()
-    database.validate_database_create()
 
 
     # Get list of tables to operate on
@@ -32,7 +31,6 @@ if __name__ == '__main__':
 
     if "--no-constraints" not in sys.argv:
         database.add_constraints()
-        database.validate_constraints()
 
     result_tabulator.tabulate(source_dbc, destination_dbc, all_tables)
 
