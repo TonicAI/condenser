@@ -21,7 +21,7 @@ Configuration must exist in `config.json`. There is an example configuration pro
 
 *dependency_breaks*: An array containg a JSON object with *"parent"* and *"child"* fields of table relationships to be ignored in order to break cycles
 
-*desired_result*: JSON object containing a *"table"*, *"schema"* and *"percent"* fields to specify desired end result.
+*desired_result*: JSON object containing a *"target"* (a string in the format `"<schema>.<table>"`) and *"percent"* fields to specify desired end result.
 
 *max_tries*: Number of iterations of binary search to find optimal input table size. We recommend 10.  This is only applicable when using the iterative approach (see next section).
 

@@ -10,8 +10,7 @@
         {"parent": "table2", "child": "table3"}
     ],
     "desired_result": {
-        "table": "target_table",
-        "schema": "public",
+        "target": "public.target_table",
         "percent": 1
     },
     "max_tries": 10,
