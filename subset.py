@@ -58,6 +58,7 @@ class Subset:
         connected_tables = [table for table in self.__all_tables if table not in disconnected_tables]
         order = get_topological_order_by_tables(relationships, connected_tables)
         order = list(order)
+        passthrough_tables = self.__get_passthrough_tables(order)
 
         database_helper.run_query('CREATE SCHEMA IF NOT EXISTS {}'.format(self.temp_schema), self.__destination_conn)
 
@@ -73,7 +74,7 @@ class Subset:
 
 
         # greedily grab as many downstream rows as the target strata can support
-        downstream_tables = compute_downstream_tables(config_reader.get_target_table(), order)
+        downstream_tables = compute_downstream_tables(config_reader.get_target_table(), passthrough_tables, order)
         print('Beginning greedy downstream subsetting with these tables: ' + str(downstream_tables))
         start_time = time.time()
         processed_tables = set(targets.keys())
@@ -84,7 +85,7 @@ class Subset:
 
 
         # use subset_via_parents to get all supporting rows according to existing needs
-        upstream_tables = list(reversed(compute_upstream_tables(config_reader.get_target_table(), order)))
+        upstream_tables = list(reversed(compute_upstream_tables(config_reader.get_target_table(), passthrough_tables, order)))
         print('Beginning upstream subsetting with these tables: ' + str(upstream_tables))
         start_time = time.time()
         for t in upstream_tables:
@@ -92,9 +93,11 @@ class Subset:
         print('Upstream subsetting completed in {}s'.format(time.time()-start_time))
 
         # get all the data for tables in disconnected components (i.e. pass those tables through)
-        print("Beginning pass-through of tables disconnected from the main component: " + str(disconnected_tables))
+        disconnected_and_passthrough_tables = set(disconnected_tables)
+        disconnected_and_passthrough_tables = list(disconnected_and_passthrough_tables.union(passthrough_tables))
+        print("Beginning pass-through and disconnected tables: " + str(disconnected_and_passthrough_tables))
         start_time = time.time()
-        for t in disconnected_tables:
+        for t in disconnected_and_passthrough_tables:
             q = 'SELECT * FROM "{}"."{}"'.format(schema_name(t), table_name(t))
             database_helper.copy_rows(self.__source_conn, self.__destination_conn, q, table_name(t), schema_name(t))
         print('Disconnected tables completed in {}s'.format(time.time()-start_time))
@@ -151,7 +154,7 @@ class Subset:
                 c = database_helper.get_table_count(table_name(t), schema_name(t), self.__source_conn)
                 if c<= passthrough_threshold:
                     passthrough_tables.append(t)
-        #an explicitly marked passthrough table canhave under 100 rows in which case it'll appear in final list twice
+        #an explicitly marked passthrough table can have under 100 rows in which case it'll appear in final list twice
         return list(set(passthrough_tables))
 
     # Table A -> Table B and Table A has the column b_id.  So we SELECT b_id from table_a from our destination
@@ -189,7 +192,7 @@ class Subset:
 
             ids_to_query = ','.join(ids)
             columns_query = self.__columns_to_copy(table, relationships)
-            q = 'SELECT {} FROM "{}"."{}" WHERE {} IN ({})'.format(columns_query, schema_name(table), table_name(table), pk_name, ids_to_query)
+            q = 'SELECT {} FROM "{}"."{}" WHERE "{}" IN ({})'.format(columns_query, schema_name(table), table_name(table), pk_name, ids_to_query)
             temp_destination_conn = self.__destination_dbc.get_db_connection()
             database_helper.copy_rows(self.__source_conn, temp_destination_conn, q, table_name(table), schema_name(table))
             temp_destination_conn.close()
@@ -229,7 +232,7 @@ def compute_targets(target_table, order):
     targets[target_table] = config_reader.get_target_percent()
     return targets
 
-def compute_downstream_tables(target_table, order):
+def compute_downstream_tables(target_table, passthrough_tables, order):
     downstream_tables = []
     in_downstream = False
     for strata in order:
@@ -237,14 +240,16 @@ def compute_downstream_tables(target_table, order):
             downstream_tables.extend(strata)
         if target_table in strata:
             in_downstream = True
+    downstream_tables = list(filter(lambda table: table not in passthrough_tables, downstream_tables))
     return downstream_tables
 
-def compute_upstream_tables(target_table, order):
+def compute_upstream_tables(target_table, passthrough_tables, order):
     upstream_tables = []
     for strata in order:
         if target_table in strata:
             break
         upstream_tables.extend(strata)
+    upstream_tables = list(filter(lambda table: table not in passthrough_tables, upstream_tables))
     return upstream_tables
 
 def compute_disconnected_tables(target_table, all_tables, relationships):

@@ -1,13 +1,13 @@
 {
     "passthrough_threshold": 50,
     "excluded_tables": [
-        {"schema": "public","tables": [ "table_of_keys"] }
+        "public.table_to_ignore", "public.spatial_ref_sys"
     ],
     "passthrough_tables": [
-        {"schema": "public", "tables": ["table_of_settings", "table_of_constants"]}
+        "public.table_of_settings", "public.table_of_constants"
     ],
     "dependency_breaks": [
-        {"parent": "table2", "child": "table3"}
+        {"parent": "schema2.table2", "child": "schema3.table3"}
     ],
     "desired_result": {
         "target": "public.target_table",

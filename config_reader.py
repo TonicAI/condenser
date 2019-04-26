@@ -15,7 +15,7 @@ def initialize(file_like = None):
         _config = json.load(file_like)
 
 def get_passthrough_threshold():
-    return _config['passthrough_threshold']
+    return _config['passthrough_threshold'] if 'passthrough_threshold' in _config else 0
 
 def get_dependency_breaks():
     return list(_config['dependency_breaks'])
