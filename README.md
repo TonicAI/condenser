@@ -14,11 +14,18 @@ Our open-source tool can subset databases up to 10GB, but it will struggle with 
 
 # TLDR Setup
 
-Three steps to setup:
+Four steps to setup, assuming Python 3.5+:
 
-1. Download the required Python modules. You can use [`pip`](https://pypi.org/project/pip/) for easy installation. The required modules are `toposort`, `psycopg2-binary`, and `mysql-connector-python`.
-2. Setup your configuration. See the details below. The simplest thing is to copy `example-config.json` to `config.json` and fill out your source and destination database connection details, as well as subsetting goals. There may be more required configuration depending on your database, but simple databases should be easy.
-3. Run! `$ python direct_subset.py`
+1. Download this repo. You can clone the repo or Download it as a zip. Scroll up, it's the green button that says "Clone or download".
+2. Download the required Python modules. You can use [`pip`](https://pypi.org/project/pip/) for easy installation. The required modules are `toposort`, `psycopg2-binary`, and `mysql-connector-python`.
+```
+$ pip install toposort
+$ pip install psycopg2-binary
+$ pip install mysql-connector-python
+```
+
+3. Setup your configuration. See the details below. The simplest thing is to copy `example-config.json` to `config.json` and fill out your source and destination database connection details, as well as subsetting goals. There may be more required configuration depending on your database, but simple databases should be easy.
+4. Run! `$ python direct_subset.py`
 
 # Config
 
@@ -58,9 +65,11 @@ Almost all the configuration is in the `config.json` file, so running is as simp
 $ python direct_subset.py
 ```
 
-One commandline arguement is supported:
+Two commandline arguements are supported:
 
 `-v`: Verbose output. Useful for performance debugging. Lists almost every query made, and it's speed.
+
+`--no-constraints`: For Postgres this will not add constraints found in the source database to the destination database. This option has no effect for MySQL.
 
 # Requirements
 
