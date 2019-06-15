@@ -1,9 +1,19 @@
 import uuid, sys
 import config_reader, result_tabulator
 from subset import Subset
-from database_creator import DatabaseCreator
+from psql_database_creator import PsqlDatabaseCreator
+from mysql_database_creator import MySqlDatabaseCreator
 from db_connect import DbConnect
-from database_helper import list_all_tables
+import database_helper
+
+def db_creator(db_type, source, dest):
+    if db_type == 'postgres':
+        return PsqlDatabaseCreator(source, dest, False)
+    elif db_type == 'mysql':
+        return MySqlDatabaseCreator(source, dest)
+    else:
+        raise ValueError('unknown db_type ' + db_type)
+
 
 if __name__ == '__main__':
     if "--stdin" in sys.argv:
@@ -11,27 +21,30 @@ if __name__ == '__main__':
     else:
         config_reader.initialize()
 
-    source_dbc = DbConnect(config_reader.get_source_db_connection_info())
-    destination_dbc = DbConnect(config_reader.get_destination_db_connection_info())
+    db_type = config_reader.get_db_type()
+    source_dbc = DbConnect(db_type, config_reader.get_source_db_connection_info())
+    destination_dbc = DbConnect(db_type, config_reader.get_destination_db_connection_info())
 
-
-    temp_schema = 'subset_' + str(uuid.uuid4()).replace('-','')
-
-    database = DatabaseCreator(source_dbc, destination_dbc, temp_schema, False)
+    database = db_creator(db_type, source_dbc, destination_dbc)
     database.teardown()
     database.create()
 
 
     # Get list of tables to operate on
-    all_tables = list_all_tables(source_dbc.get_db_connection())
+    all_tables = database_helper.get_specific_helper().list_all_tables(source_dbc)
     all_tables = [x for x in all_tables if x not in config_reader.get_excluded_tables()]
 
-    s = Subset(source_dbc, destination_dbc, temp_schema, all_tables)
-    s.run_middle_out()
+    subsetter = Subset(source_dbc, destination_dbc, all_tables)
 
-    if "--no-constraints" not in sys.argv:
-        database.add_constraints()
+    try:
+        subsetter.prep_temp_dbs()
+        subsetter.run_middle_out()
 
-    result_tabulator.tabulate(source_dbc, destination_dbc, all_tables)
+        if "--no-constraints" not in sys.argv:
+            database.add_constraints()
+
+        result_tabulator.tabulate(source_dbc, destination_dbc, all_tables)
+    finally:
+        subsetter.unprep_temp_dbs()
 
 

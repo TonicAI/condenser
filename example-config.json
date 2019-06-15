@@ -1,5 +1,4 @@
 {
-    "passthrough_threshold": 50,
     "excluded_tables": [
         "public.table_to_ignore", "public.spatial_ref_sys"
     ],
@@ -7,13 +6,27 @@
         "public.table_of_settings", "public.table_of_constants"
     ],
     "dependency_breaks": [
-        {"parent": "schema2.table2", "child": "schema3.table3"}
+        {"fk_table": "schema2.table2", "target_table": "schema3.table3"}
     ],
-    "desired_result": {
-        "target": "public.target_table",
-        "percent": 1
-    },
-    "max_tries": 10,
+    "initial_targets": [
+        {
+            "table": "public.target_table",
+            "percent": 10
+        },
+        {
+            "table": "public.users",
+            "where": "split_part(email, '@', 2) = 'hotmail.com'"
+        }
+    ],
+    "fk_augmentation": [
+        {
+            "fk_table": "public.fk_table",
+            "fk_columns": ["user_id"],
+            "target_table": "public.user",
+            "target_columns": ["id"]
+        }
+    ],
+    "db_type": "postgres",
     "source_db_connection_info": {
         "user_name": "",
         "host": "",
@@ -27,5 +40,6 @@
         "db_name": "",
         "ssl_mode": "",
         "port": 5432
-     }
+     },
+     "keep_disconnected_tables": true
  }
