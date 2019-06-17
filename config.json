@@ -1,0 +1,26 @@
+{
+    "initial_targets": [
+        {
+            "table": "public.target_table",
+            "percent": 10
+        }
+    ],
+    "db_type": "postgres",
+    "source_db_connection_info": {
+        "user_name": "user",
+        "host": "host.host.com",
+        "db_name": "source_db",
+        "port": 5432
+    },
+    "destination_db_connection_info": {
+        "user_name": "user",
+        "host": "host.host.com",
+        "db_name": "destination_db",
+        "port": 5432
+    },
+    "keep_disconnected_tables": false,
+    "excluded_tables": [ ],
+    "passthrough_tables": [ ],
+    "dependency_breaks": [ ],
+    "fk_augmentation": [ ]
+ }

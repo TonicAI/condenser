@@ -1,5 +1,4 @@
 .python-version
 __pycache__/
 .vscode/
-*.json
 SQL/
