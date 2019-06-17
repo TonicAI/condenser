@@ -8,24 +8,33 @@ One common use-case is to scale down a production database to a more reasonable 
 
 You can find more details about how we built this [here](https://www.tonic.ai/blog/condenser-a-database-subsetting-tool).
 
-# Need to Subset a Large Database?
+## Need to Subset a Large Database?
 
 Our open-source tool can subset databases up to 10GB, but it will struggle with larger databases. Our premium database subsetter can, among other things, subset multi-TB databases with ease. If you're interested find us at [hello@tonic.ai](mailto:hello@tonic.ai).
 
-# TLDR Setup
+# Installation
 
-Four steps to setup, assuming Python 3.5+:
+Five steps to install, assuming Python 3.5+:
 
-1. Download this repo. You can clone the repo or Download it as a zip. Scroll up, it's the green button that says "Clone or download".
-2. Download the required Python modules. You can use [`pip`](https://pypi.org/project/pip/) for easy installation. The required modules are `toposort`, `psycopg2-binary`, and `mysql-connector-python`.
+1. Download the required Python modules. You can use [`pip`](https://pypi.org/project/pip/) for easy installation. The required modules are `toposort`, `psycopg2-binary`, and `mysql-connector-python`.
 ```
 $ pip install toposort
 $ pip install psycopg2-binary
 $ pip install mysql-connector-python
 ```
-
-3. Setup your configuration. See the details below. The simplest thing is to copy `example-config.json` to `config.json` and fill out your source and destination database connection details, as well as subsetting goals. There may be more required configuration depending on your database, but simple databases should be easy.
-4. Run! `$ python direct_subset.py`
+2. Install Postgres and/or MySQL database tools. For Postgres we need `pg_dump` and `psql` tools; they need to be on your `$PATH` or point to them with `$POSTGRES_PATH`. For MySQL we need `mysqldump` and `mysql`, they can be on your `$PATH` or point to them with `$MYSQL_PATH`.
+3. Download this repo. You can clone the repo or Download it as a zip. Scroll up, it's the green button that says "Clone or download".
+4. Setup your configuration. The provided `config.json` has the skeleton of what you need to provide: source and destination database connection details, as well as subsetting goals in `initial_targets`. Here's an example that will collect 10% of a table named `public.target_table`.
+```
+"initial_targets": [
+    {
+        "table": "public.target_table",
+        "percent": 10
+    }
+]
+```
+There may be more required configuration depending on your database, but simple databases should be easy. See the Config section for more details.
+5. Run! `$ python direct_subset.py`
 
 # Config
 
@@ -73,4 +82,4 @@ Two commandline arguements are supported:
 
 # Requirements
 
-Reference the requirements.txt file for a list of required python packages.  Also, please note that python3.6 is required.
+Reference the requirements.txt file for a list of required python packages.  Also, please note that Python 3.5+ is required.

@@ -1,13 +1,4 @@
 {
-    "excluded_tables": [
-        "public.table_to_ignore", "public.spatial_ref_sys"
-    ],
-    "passthrough_tables": [
-        "public.table_of_settings", "public.table_of_constants"
-    ],
-    "dependency_breaks": [
-        {"fk_table": "schema2.table2", "target_table": "schema3.table3"}
-    ],
     "initial_targets": [
         {
             "table": "public.target_table",
@@ -18,6 +9,29 @@
             "where": "split_part(email, '@', 2) = 'hotmail.com'"
         }
     ],
+    "db_type": "postgres",
+    "source_db_connection_info": {
+        "user_name": "user",
+        "host": "host.host.com",
+        "db_name": "source_db",
+        "port": 5432
+    },
+    "destination_db_connection_info": {
+        "user_name": "user",
+        "host": "host.host.com",
+        "db_name": "destination_db",
+        "port": 5432
+    },
+    "keep_disconnected_tables": false,
+    "excluded_tables": [
+        "public.table_to_ignore", "public.spatial_ref_sys"
+    ],
+    "passthrough_tables": [
+        "public.table_of_settings", "public.table_of_constants"
+    ],
+    "dependency_breaks": [
+        {"fk_table": "schema2.table2", "target_table": "schema3.table3"}
+    ],
     "fk_augmentation": [
         {
             "fk_table": "public.fk_table",
@@ -25,21 +39,5 @@
             "target_table": "public.user",
             "target_columns": ["id"]
         }
-    ],
-    "db_type": "postgres",
-    "source_db_connection_info": {
-        "user_name": "",
-        "host": "",
-        "db_name": "",
-        "ssl_mode": "",
-        "port": 5432
-     },
-     "destination_db_connection_info": {
-        "user_name": "",
-        "host": "",
-        "db_name": "",
-        "ssl_mode": "",
-        "port": 5432
-     },
-     "keep_disconnected_tables": true
+    ]
  }
