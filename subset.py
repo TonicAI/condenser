@@ -57,7 +57,7 @@ class Subset:
         print('Direct target tables completed in {}s'.format(time.time()-start_time))
 
         # greedily grab rows with foreign keys to rows in the target strata
-        upstream_tables = compute_upstream_tables(config_reader.get_initial_target_tables(), passthrough_tables, order)
+        upstream_tables = compute_upstream_tables(config_reader.get_initial_target_tables(), order)
         print('Beginning greedy upstream subsetting with these tables: ' + str(upstream_tables))
         start_time = time.time()
         for idx, t in enumerate(upstream_tables):
