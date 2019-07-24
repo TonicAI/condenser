@@ -10,7 +10,7 @@ You can find more details about how we built this [here](https://www.tonic.ai/bl
 
 ## Need to Subset a Large Database?
 
-Our open-source tool can subset databases up to 10GB, but it will struggle with larger databases. Our premium database subsetter can, among other things, subset multi-TB databases with ease. If you're interested find us at [hello@tonic.ai](mailto:hello@tonic.ai).
+Our open-source tool can subset databases up to 10GB, but it will struggle with larger databases. Our premium database subsetter can, among other things (graphical UI, job scheduling, fancy algorithms), subset multi-TB databases with ease. If you're interested find us at [hello@tonic.ai](mailto:hello@tonic.ai).
 
 # Installation
 

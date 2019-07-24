@@ -141,7 +141,7 @@ class Subset:
 
             # filter it down in the target database
             table_columns = self.__db_helper.get_table_columns(table_name(target), schema_name(target), self.__source_conn)
-            clauses = ['{} IN (SELECT {} FROM {})'.format(columns_tupled(kc['fk_columns']), columns_joined(kc['target_columns']), fully_qualified_table(kc['target_table'])) for kc in relevant_key_constraints]
+            clauses = ['{} IN (SELECT {} FROM {})'.format(columns_tupled(kc['fk_columns']), columns_joined(kc['target_columns']), fully_qualified_table(mysql_db_name_hack(kc['target_table'], self.__destination_conn))) for kc in relevant_key_constraints]
             clauses.extend(upstream_filter_match(target, table_columns))
 
             select_query = 'SELECT * FROM {} WHERE TRUE AND {}'.format(quoter(temp_target_name), ' AND '.join(clauses))
