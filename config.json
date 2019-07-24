@@ -22,5 +22,6 @@
     "excluded_tables": [ ],
     "passthrough_tables": [ ],
     "dependency_breaks": [ ],
-    "fk_augmentation": [ ]
+    "fk_augmentation": [ ],
+    "upstream_filters": [ ]
  }
