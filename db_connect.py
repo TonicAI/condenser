@@ -1,6 +1,6 @@
 import config_reader
 import psycopg2, mysql.connector
-import os, pathlib, re, urllib, subprocess, os.path, json, getpass, time, sys
+import os, pathlib, re, urllib, subprocess, os.path, json, getpass, time, sys, datetime
 
 class DbConnect:
 
@@ -53,7 +53,7 @@ class LoggingCursor:
     def execute(self, query):
         start_time = time.time()
         if config_reader.verbose_logging():
-            print('Beginning query:\n\t{}'.format(query))
+            print('Beginning query @ {}:\n\t{}'.format(str(datetime.datetime.now()), query))
             sys.stdout.flush()
         retval = self.inner_cursor.execute(query)
         if config_reader.verbose_logging():

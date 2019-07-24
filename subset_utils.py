@@ -7,8 +7,9 @@ from db_connect import MySqlConnection
 # to the downstream dependency that breaks the cycle
 def columns_to_copy(table, relationships, conn):
     target_breaks = set()
+    opportunists = config_reader.get_preserve_fk_opportunistically()
     for dep_break in config_reader.get_dependency_breaks():
-        if dep_break.fk_table == table:
+        if dep_break.fk_table == table and dep_break not in opportunists:
             target_breaks.add(dep_break.target_table)
 
     columns_to_null = set()
@@ -19,6 +20,20 @@ def columns_to_copy(table, relationships, conn):
     columns = database_helper.get_specific_helper().get_table_columns(table_name(table), schema_name(table), conn)
     return ','.join(['{}.{}'.format(quoter(table_name(table)), quoter(c)) if c not in columns_to_null else 'NULL as {}'.format(quoter(c)) for c in columns])
 
+def upstream_filter_match(target, table_columns):
+    retval = []
+    filters = config_reader.get_upstream_filters()
+    for filter in filters:
+        if "table" in filter and target == filter["table"]:
+            retval.append(filter["condition"])
+        if "column" in filter and filter["column"] in table_columns:
+            retval.append(filter["condition"])
+    return retval
+
+def redact_relationships(relationships):
+    breaks = config_reader.get_dependency_breaks()
+    retval = [r for r in relationships if (r['fk_table'], r['target_table']) not in breaks]
+    return retval
 
 def find(f, seq):
     """Return first item in sequence where f(item) == True."""

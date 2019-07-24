@@ -16,9 +16,12 @@ def initialize(file_like = None):
     if "desired_result" in _config:
         raise ValueError("desired_result is a key in the old config spec. Check the README.md and example-config.json for the latest configuration parameters.")
 
+DependencyBreak = collections.namedtuple('DependencyBreak', ['fk_table', 'target_table'])
 def get_dependency_breaks():
-    DependencyBreak = collections.namedtuple('DependencyBreak', ['fk_table', 'target_table'])
     return set([DependencyBreak(b['fk_table'], b['target_table']) for b in _config['dependency_breaks']])
+
+def get_preserve_fk_opportunistically():
+    return set([DependencyBreak(b['fk_table'], b['target_table']) for b in _config['dependency_breaks'] if 'perserve_fk_opportunistically' in b and b['perserve_fk_opportunistically']])
 
 def get_initial_targets():
     return _config['initial_targets']
@@ -48,7 +51,7 @@ def get_fk_augmentation():
     return list(map(__convert_tonic_format, _config['fk_augmentation']))
 
 def get_upstream_filters():
-    return {f["table"] : f["condition"] for f in _config["upstream_filters"]}
+    return _config["upstream_filters"]
 
 def __convert_tonic_format(obj):
     if "fk_schema" in obj:

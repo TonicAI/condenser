@@ -1,7 +1,7 @@
 import os, uuid, csv
 import config_reader
 from pathlib import Path
-from subset_utils import columns_joined, columns_tupled, quoter, schema_name, table_name, fully_qualified_table
+from subset_utils import columns_joined, columns_tupled, quoter, schema_name, table_name, fully_qualified_table, redact_relationships
 
 system_schemas_str = ','.join(['\'' + schema + '\'' for schema in  ['information_schema', 'performance_schema', 'sys', 'mysql', 'innodb','tmp']])
 temp_db = 'tonic_subset_temp_db_398dhjr23'
@@ -77,14 +77,10 @@ def copy_to_temp_table(conn, query, target_table, pk_columns = None):
 def source_db_temp_table(target_table):
     return temp_db + '.' + schema_name(target_table) + '_' + table_name(target_table)
 
-def get_referencing_tables(table_name, tables, conn):
-    return [r for r in __get_redacted_fk_relationships(tables, conn) if r['target_table']==table_name]
-
-def __get_redacted_fk_relationships(tables, conn):
+def get_redacted_table_references(table_name, tables, conn):
     relationships = get_unredacted_fk_relationships(tables, conn)
-    breaks = config_reader.get_dependency_breaks()
-    relationships = [r for r in relationships if (r['fk_table'], r['target_table']) not in breaks]
-    return relationships
+    redacted = redact_relationships(relationships)
+    return [r for r in redacted if r['target_table']==table_name]
 
 def get_unredacted_fk_relationships(tables, conn):
     cur = conn.cursor()

@@ -1,5 +1,5 @@
 from topo_orderer import get_topological_order_by_tables
-from subset_utils import UnionFind, table_name, find, compute_disconnected_tables, compute_downstream_tables, compute_upstream_tables, columns_joined, columns_tupled, columns_to_copy, quoter, fully_qualified_table, print_progress, print_progress_complete, mysql_db_name_hack
+from subset_utils import UnionFind, schema_name, table_name, find, compute_disconnected_tables, compute_downstream_tables, compute_upstream_tables, columns_joined, columns_tupled, columns_to_copy, quoter, fully_qualified_table, print_progress, print_progress_complete, mysql_db_name_hack, upstream_filter_match, redact_relationships
 import database_helper
 import config_reader
 import shutil, os, uuid, time, itertools
@@ -122,7 +122,8 @@ class Subset:
 
     def __subset_upstream(self, target, processed_tables, relationships):
 
-        relevant_key_constraints = list(filter(lambda r: r['target_table'] in processed_tables and r['fk_table'] == target, relationships))
+        redacted_relationships = redact_relationships(relationships)
+        relevant_key_constraints = list(filter(lambda r: r['target_table'] in processed_tables and r['fk_table'] == target, redacted_relationships))
         # this table isn't referenced by anything we've already processed, so let's leave it empty
         #  OR
         # table was already added, this only happens if the upstream table was also a direct target
@@ -139,10 +140,10 @@ class Subset:
             self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, query, temp_target_name)
 
             # filter it down in the target database
-            clauses = map(lambda kc: '{} IN (SELECT {} FROM {})'.format(columns_tupled(kc['fk_columns']), columns_joined(kc['target_columns']), fully_qualified_table(mysql_db_name_hack(kc['target_table'], self.__destination_conn))), relevant_key_constraints)
-            clauses = list(clauses)
-            if target in config_reader.get_upstream_filters():
-                clauses.append(config_reader.get_upstream_filters()[target])
+            table_columns = self.__db_helper.get_table_columns(table_name(target), schema_name(target), self.__source_conn)
+            clauses = ['{} IN (SELECT {} FROM {})'.format(columns_tupled(kc['fk_columns']), columns_joined(kc['target_columns']), fully_qualified_table(kc['target_table'])) for kc in relevant_key_constraints]
+            clauses.extend(upstream_filter_match(target, table_columns))
+
             select_query = 'SELECT * FROM {} WHERE TRUE AND {}'.format(quoter(temp_target_name), ' AND '.join(clauses))
             insert_query = 'INSERT INTO {} {}'.format(fully_qualified_table(mysql_db_name_hack(target, self.__destination_conn)), select_query)
             self.__db_helper.run_query(insert_query, self.__destination_conn)
@@ -164,7 +165,7 @@ class Subset:
     # database.  And we take those b_ids and run `select * from table b where id in (those list of ids)` then insert
     # that result set into table b of the destination database
     def subset_downstream(self, table, relationships):
-        referencing_tables = self.__db_helper.get_referencing_tables(table, self.__all_tables, self.__source_conn)
+        referencing_tables = self.__db_helper.get_redacted_table_references(table, self.__all_tables, self.__source_conn)
 
         if len(referencing_tables) > 0:
             pk_columns = referencing_tables[0]['target_columns']

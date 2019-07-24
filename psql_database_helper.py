@@ -2,7 +2,7 @@ import os, uuid, csv
 import config_reader
 from pathlib import Path
 from psycopg2.extras import execute_values, register_default_json, register_default_jsonb
-from subset_utils import columns_joined, columns_tupled, schema_name, table_name, fully_qualified_table
+from subset_utils import columns_joined, columns_tupled, schema_name, table_name, fully_qualified_table, redact_relationships
 
 register_default_json(loads=lambda x: str(x))
 register_default_jsonb(loads=lambda x: str(x))
@@ -75,14 +75,10 @@ def copy_to_temp_table(conn, query, target_table, pk_columns = None):
         cur.execute('INSERT INTO ' + temp_table + ' ' + query)
         conn.commit()
 
-def get_referencing_tables(table_name, tables, conn):
-    return [r for r in __get_redacted_fk_relationships(tables, conn) if r['target_table']==table_name]
-
-def __get_redacted_fk_relationships(tables, conn):
+def get_redacted_table_references(table_name, tables, conn):
     relationships = get_unredacted_fk_relationships(tables, conn)
-    breaks = config_reader.get_dependency_breaks()
-    relationships = [r for r in relationships if (r['fk_table'], r['target_table']) not in breaks]
-    return relationships
+    redacted = redact_relationships(relationships)
+    return [r for r in redacted if r['target_table']==table_name]
 
 def get_unredacted_fk_relationships(tables, conn):
     cur = conn.cursor()

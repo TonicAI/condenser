@@ -27,6 +27,10 @@
         {
             "table": "public.an_upstream_table",
             "condition": "timestamp > '01-01-2001'"
+        },
+        {
+            "column": "condition_applied_to_any_table_with_this_column",
+            "condition": "condition_applied_to_any_table_with_this_column > 42"
         }
     ],
     "excluded_tables": [
