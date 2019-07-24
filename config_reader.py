@@ -47,6 +47,8 @@ def get_passthrough_tables():
 def get_fk_augmentation():
     return list(map(__convert_tonic_format, _config['fk_augmentation']))
 
+def get_upstream_filters():
+    return {f["table"] : f["condition"] for f in _config["upstream_filters"]}
 
 def __convert_tonic_format(obj):
     if "fk_schema" in obj:

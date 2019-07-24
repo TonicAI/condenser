@@ -60,6 +60,8 @@ Below we describe the use of all configuration parameters, but the best place to
 
 `excluded_tables`: Tables that will be excluded from the subset. The table will exist in the output, but contain no rows. The value is a JSON array of strings, of the form `"<schema>.<table>"` for Postgres and `"<database>.<table>"` for MySQL.
 
+`upstream_filters`: Additional filtering to be applied to tables during upstream subsetting. Upstream subsetting happens when a row is imported, and there are rows with foreign keys to that row. The subsetter then greedily grabs as many rows from the database as it can, based on the rows already imported. If you don't want such greedy behavior you can impose additional filters with this option. This is an advanced feature, you probably won't need for your first subsets. The value is a JSON array of JSON objects. See `example-config.json` for details.
+
 `fk_augmentation`: Additional foreign keys that, while not represented as constraints in the database, are logically present in the data. Foreign keys listed in `fk_augmentation` are unioned with the foreign keys provided by constraints in the database. `fk_augmentation` is useful when there are foreign keys existing in the data, but not represented in the database. The value is a JSON array of JSON objects. See `example-config.json` for details.
 
 `dependency_breaks`: An array containg a JSON object with *"fk_table"* and *"target_table"* fields of table relationships to be ignored in order to break cycles

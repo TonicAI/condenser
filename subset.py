@@ -62,7 +62,7 @@ class Subset:
         start_time = time.time()
         for idx, t in enumerate(upstream_tables):
             print_progress(t, idx+1, len(upstream_tables))
-            data_added = self.__subset_greedily(t, processed_tables, relationships)
+            data_added = self.__subset_upstream(t, processed_tables, relationships)
             if data_added:
                 processed_tables.add(t)
         print_progress_complete(len(upstream_tables))
@@ -120,7 +120,7 @@ class Subset:
         self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, q, mysql_db_name_hack(t, self.__destination_conn))
 
 
-    def __subset_greedily(self, target, processed_tables, relationships):
+    def __subset_upstream(self, target, processed_tables, relationships):
 
         relevant_key_constraints = list(filter(lambda r: r['target_table'] in processed_tables and r['fk_table'] == target, relationships))
         # this table isn't referenced by anything we've already processed, so let's leave it empty
@@ -140,6 +140,9 @@ class Subset:
 
             # filter it down in the target database
             clauses = map(lambda kc: '{} IN (SELECT {} FROM {})'.format(columns_tupled(kc['fk_columns']), columns_joined(kc['target_columns']), fully_qualified_table(mysql_db_name_hack(kc['target_table'], self.__destination_conn))), relevant_key_constraints)
+            clauses = list(clauses)
+            if target in config_reader.get_upstream_filters():
+                clauses.append(config_reader.get_upstream_filters()[target])
             select_query = 'SELECT * FROM {} WHERE TRUE AND {}'.format(quoter(temp_target_name), ' AND '.join(clauses))
             insert_query = 'INSERT INTO {} {}'.format(fully_qualified_table(mysql_db_name_hack(target, self.__destination_conn)), select_query)
             self.__db_helper.run_query(insert_query, self.__destination_conn)

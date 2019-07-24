@@ -23,6 +23,12 @@
         "port": 5432
     },
     "keep_disconnected_tables": false,
+    "upstream_filters": [
+        {
+            "table": "public.an_upstream_table",
+            "condition": "timestamp > '01-01-2001'"
+        }
+    ],
     "excluded_tables": [
         "public.table_to_ignore", "public.spatial_ref_sys"
     ],
