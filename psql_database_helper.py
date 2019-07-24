@@ -2,7 +2,7 @@ import os, uuid, csv
 import config_reader
 from pathlib import Path
 from psycopg2.extras import execute_values, register_default_json, register_default_jsonb
-from subset_utils import columns_joined, columns_tupled, schema_name, table_name, fully_qualified_table, redact_relationships
+from subset_utils import columns_joined, columns_tupled, schema_name, table_name, fully_qualified_table, redact_relationships, quoter
 
 register_default_json(loads=lambda x: str(x))
 register_default_jsonb(loads=lambda x: str(x))
@@ -74,6 +74,17 @@ def copy_to_temp_table(conn, query, target_table, pk_columns = None):
             query = query + ' WHERE {} NOT IN (SELECT {} FROM {})'.format(columns_tupled(pk_columns), columns_joined(pk_columns), temp_table)
         cur.execute('INSERT INTO ' + temp_table + ' ' + query)
         conn.commit()
+
+def clean_temp_table_cells(fk_table, fk_columns, target_table, target_columns, conn):
+    fk_alias = 'tonic_subset_398dhjr23_fk'
+    target_alias = 'tonic_subset_398dhjr23_target'
+
+    fk_table = fully_qualified_table(source_db_temp_table(fk_table))
+    target_table = fully_qualified_table(source_db_temp_table(target_table))
+    assignment_list = ','.join(['{} = NULL'.format(quoter(c)) for c in fk_columns])
+    column_matching = ' AND '.join(['{}.{} = {}.{}'.format(fk_alias, quoter(fc), target_alias, quoter(tc)) for fc, tc in zip(fk_columns, target_columns)])
+    q = 'UPDATE {} {} SET {} WHERE NOT EXISTS (SELECT 1 FROM {} {} WHERE {})'.format(fk_table, fk_alias, assignment_list, target_table, target_alias, column_matching)
+    run_query(q, conn)
 
 def get_redacted_table_references(table_name, tables, conn):
     relationships = get_unredacted_fk_relationships(tables, conn)

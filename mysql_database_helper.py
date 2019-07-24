@@ -74,6 +74,19 @@ def copy_to_temp_table(conn, query, target_table, pk_columns = None):
     finally:
         cur.close()
 
+def clean_temp_table_cells(fk_table, fk_columns, target_table, target_columns, conn):
+    fk_alias = 'tonic_subset_398dhjr23_fk'
+    target_alias = 'tonic_subset_398dhjr23_target'
+
+    fk_table = fully_qualified_table(source_db_temp_table(fk_table))
+    target_table = fully_qualified_table(source_db_temp_table(target_table))
+    assignment_list = ','.join(['{}.{} = NULL'.format(fk_alias, quoter(c)) for c in fk_columns])
+    column_matching = ' AND '.join(['{}.{} = {}.{}'.format(fk_alias, quoter(fc), target_alias, quoter(tc)) for fc, tc in zip(fk_columns, target_columns)])
+    target_columns_null = ' AND '.join(['{}.{} IS NULL'.format(target_alias, quoter(tc)) for tc in target_columns]
+        + ['{}.{} IS NOT NULL'.format(fk_alias, quoter(c)) for c in fk_columns])
+    q = 'UPDATE {} {} LEFT JOIN {} {} ON {} SET {} WHERE {}'.format(fk_table, fk_alias, target_table, target_alias, column_matching, assignment_list, target_columns_null)
+    run_query(q, conn)
+
 def source_db_temp_table(target_table):
     return temp_db + '.' + schema_name(target_table) + '_' + table_name(target_table)
 
