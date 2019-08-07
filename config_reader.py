@@ -53,6 +53,9 @@ def get_fk_augmentation():
 def get_upstream_filters():
     return _config["upstream_filters"]
 
+def get_post_subset_sql():
+    return _config["post_subset_sql"] if "post_subset_sql" in _config else []
+
 def __convert_tonic_format(obj):
     if "fk_schema" in obj:
         return {

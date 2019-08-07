@@ -50,5 +50,6 @@
             "target_table": "public.user",
             "target_columns": ["id"]
         }
-    ]
+    ],
+    "post_subset_sql": ["UPDATE a_table SET a_column = 'value'"]
  }

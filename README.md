@@ -64,9 +64,11 @@ Below we describe the use of all configuration parameters, but the best place to
 
 `fk_augmentation`: Additional foreign keys that, while not represented as constraints in the database, are logically present in the data. Foreign keys listed in `fk_augmentation` are unioned with the foreign keys provided by constraints in the database. `fk_augmentation` is useful when there are foreign keys existing in the data, but not represented in the database. The value is a JSON array of JSON objects. See `example-config.json` for details.
 
-`dependency_breaks`: An array containg a JSON object with *"fk_table"* and *"target_table"* fields of table relationships to be ignored in order to break cycles
+`dependency_breaks`: An array containing JSON objects with *"fk_table"* and *"target_table"* fields of table relationships to be ignored in order to break cycles
 
 `keep_disconnected_tables`: If `true` tables that the subset target(s) don't reach, when following foreign keys, will be copied 100% over. If it's `false` then their schema will be copied but the table contents will be empty. Put more mathematically, the tables and foreign keys create a graph (where tables are nodes and foreign keys are directed edges) disconnected tables are the tables in components that don't contain any targets. This setting decides how to import those tables.
+
+`post_subset_sql`: An array of SQL commands that will be issued on the destination database after subsetting is complete. Useful to perform additional adhoc tasks after subsetting.
 
 # Running
 

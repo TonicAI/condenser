@@ -93,12 +93,7 @@ def quoter(id):
     return q + id + q
 
 def print_progress(target, idx, count):
-    end = '\n' if config_reader.verbose_logging() else ''
-    print('\x1b[2K\rProcessing {} of {}: {}'.format(idx, count, target), end=end)
-
-def print_progress_complete(count):
-    if count > 0:
-        print('')
+    print('Processing {} of {}: {}'.format(idx, count, target))
 
 class UnionFind:
 

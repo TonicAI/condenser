@@ -1,9 +1,12 @@
 import uuid, sys
 import config_reader, result_tabulator
+import time
 from subset import Subset
+from fast_subset import FastSubset
 from psql_database_creator import PsqlDatabaseCreator
 from mysql_database_creator import MySqlDatabaseCreator
 from db_connect import DbConnect
+from subset_utils import print_progress
 import database_helper
 
 def db_creator(db_type, source, dest):
@@ -29,12 +32,15 @@ if __name__ == '__main__':
     database.teardown()
     database.create()
 
-
     # Get list of tables to operate on
-    all_tables = database_helper.get_specific_helper().list_all_tables(source_dbc)
+    db_helper = database_helper.get_specific_helper()
+    all_tables = db_helper.list_all_tables(source_dbc)
     all_tables = [x for x in all_tables if x not in config_reader.get_excluded_tables()]
 
-    subsetter = Subset(source_dbc, destination_dbc, all_tables)
+    if "--fast" in sys.argv:
+        subsetter = FastSubset(source_dbc, destination_dbc, all_tables)
+    else:
+        subsetter = Subset(source_dbc, destination_dbc, all_tables)
 
     try:
         subsetter.prep_temp_dbs()
@@ -42,6 +48,13 @@ if __name__ == '__main__':
 
         if "--no-constraints" not in sys.argv:
             database.add_constraints()
+
+        print("Beginning post subset SQL calls")
+        start_time = time.time()
+        for idx, sql in enumerate(config_reader.get_post_subset_sql()):
+            print_progress(sql, idx+1, len(config_reader.get_post_subset_sql()))
+            db_helper.run_query(sql, destination_dbc.get_db_connection())
+        print("Completed post subset SQL calls in {}s".format(time.time()-start_time))
 
         result_tabulator.tabulate(source_dbc, destination_dbc, all_tables)
     finally:

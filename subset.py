@@ -1,5 +1,5 @@
 from topo_orderer import get_topological_order_by_tables
-from subset_utils import UnionFind, schema_name, table_name, find, compute_disconnected_tables, compute_downstream_tables, compute_upstream_tables, columns_joined, columns_tupled, columns_to_copy, quoter, fully_qualified_table, print_progress, print_progress_complete, mysql_db_name_hack, upstream_filter_match, redact_relationships
+from subset_utils import UnionFind, schema_name, table_name, find, compute_disconnected_tables, compute_downstream_tables, compute_upstream_tables, columns_joined, columns_tupled, columns_to_copy, quoter, fully_qualified_table, print_progress, mysql_db_name_hack, upstream_filter_match, redact_relationships
 import database_helper
 import config_reader
 import shutil, os, uuid, time, itertools
@@ -53,7 +53,6 @@ class Subset:
             print_progress(target, idx+1, len(config_reader.get_initial_targets()))
             self.__subset_direct(target, relationships)
             processed_tables.add(target['table'])
-        print_progress_complete(len(config_reader.get_initial_targets()))
         print('Direct target tables completed in {}s'.format(time.time()-start_time))
 
         # greedily grab rows with foreign keys to rows in the target strata
@@ -65,7 +64,6 @@ class Subset:
             data_added = self.__subset_upstream(t, processed_tables, relationships)
             if data_added:
                 processed_tables.add(t)
-        print_progress_complete(len(upstream_tables))
         print('Greedy subsettings completed in {}s'.format(time.time()-start_time))
 
         # process pass-through tables, you need this before subset_downstream, so you can get all required downstream rows
@@ -75,7 +73,6 @@ class Subset:
             print_progress(t, idx+1, len(passthrough_tables))
             q = 'SELECT * FROM {}'.format(fully_qualified_table(t))
             self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, q, mysql_db_name_hack(t, self.__destination_conn))
-        print_progress_complete(len(passthrough_tables))
         print('Pass-through completed in {}s'.format(time.time()-start_time))
 
         # use subset_downstream to get all supporting rows according to existing needs
@@ -85,7 +82,6 @@ class Subset:
         for idx, t in enumerate(downstream_tables):
             print_progress(t, idx+1, len(downstream_tables))
             self.subset_downstream(t, relationships)
-        print_progress_complete(len(downstream_tables))
         print('Downstream subsetting completed in {}s'.format(time.time()-start_time))
 
         if config_reader.keep_disconnected_tables():
@@ -96,7 +92,6 @@ class Subset:
                 print_progress(t, idx+1, len(disconnected_tables))
                 q = 'SELECT * FROM {}'.format(fully_qualified_table(t))
                 self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, q, mysql_db_name_hack(t, self.__destination_conn))
-            print_progress_complete(len(disconnected_tables))
             print('Disconnected tables completed in {}s'.format(time.time()-start_time))
 
     def prep_temp_dbs(self):
