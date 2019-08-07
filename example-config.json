@@ -20,6 +20,7 @@
         "user_name": "user",
         "host": "host.host.com",
         "db_name": "destination_db",
+        "password": "if you don't include a password option, you will be prompted every time",
         "port": 5432
     },
     "keep_disconnected_tables": false,
