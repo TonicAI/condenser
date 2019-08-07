@@ -2,7 +2,6 @@ import uuid, sys
 import config_reader, result_tabulator
 import time
 from subset import Subset
-from fast_subset import FastSubset
 from psql_database_creator import PsqlDatabaseCreator
 from mysql_database_creator import MySqlDatabaseCreator
 from db_connect import DbConnect
@@ -37,10 +36,7 @@ if __name__ == '__main__':
     all_tables = db_helper.list_all_tables(source_dbc)
     all_tables = [x for x in all_tables if x not in config_reader.get_excluded_tables()]
 
-    if "--fast" in sys.argv:
-        subsetter = FastSubset(source_dbc, destination_dbc, all_tables)
-    else:
-        subsetter = Subset(source_dbc, destination_dbc, all_tables)
+    subsetter = Subset(source_dbc, destination_dbc, all_tables)
 
     try:
         subsetter.prep_temp_dbs()
