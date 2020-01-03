@@ -29,6 +29,7 @@ class Subset:
 
         self.__source_conn = source_dbc.get_db_connection(read_repeatable=True)
         self.__destination_conn = destination_dbc.get_db_connection()
+        self.__destination_write_conn = destination_dbc.get_db_connection()
 
         self.__all_tables = all_tables
 
@@ -174,7 +175,7 @@ class Subset:
             fk_columns = r['fk_columns']
 
             q='SELECT {} FROM {} WHERE {} NOT IN (SELECT {} FROM {})'.format(columns_joined(fk_columns), fully_qualified_table(mysql_db_name_hack(fk_table, self.__destination_conn)), columns_tupled(fk_columns), columns_joined(pk_columns), fully_qualified_table(mysql_db_name_hack(table, self.__destination_conn)))
-            self.__db_helper.copy_rows(self.__destination_conn, self.__destination_conn, q, temp_table)
+            self.__db_helper.copy_rows(self.__destination_conn, self.__destination_write_conn, q, temp_table)
 
         columns_query = columns_to_copy(table, relationships, self.__source_conn)
 
