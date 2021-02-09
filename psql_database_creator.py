@@ -59,10 +59,10 @@ class PsqlDatabaseCreator:
         if len(user_schemas) == 0:
             raise Exception("Couldn't find any non system schemas.")
 
-        drop_statements = ["DROP SCHEMA IF EXISTS {} CASCADE;".format(s) for s in user_schemas if s != 'public']
+        drop_statements = ["DROP SCHEMA IF EXISTS \"{}\" CASCADE".format(s) for s in user_schemas if s != 'public']
 
         q = ';'.join(drop_statements)
-        q += "DROP SCHEMA IF EXISTS public CASCADE;CREATE SCHEMA IF NOT EXISTS public;"
+        q += ";DROP SCHEMA IF EXISTS public CASCADE;CREATE SCHEMA IF NOT EXISTS public;"
 
         self.run_query(q)
 
