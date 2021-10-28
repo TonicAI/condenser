@@ -24,7 +24,7 @@ $ pip install mysql-connector-python
 ```
 2. Install Postgres and/or MySQL database tools. For Postgres we need `pg_dump` and `psql` tools; they need to be on your `$PATH` or point to them with `$POSTGRES_PATH`. For MySQL we need `mysqldump` and `mysql`, they can be on your `$PATH` or point to them with `$MYSQL_PATH`.
 3. Download this repo. You can clone the repo or Download it as a zip. Scroll up, it's the green button that says "Clone or download".
-4. Setup your configuration. The provided `config.json` has the skeleton of what you need to provide: source and destination database connection details, as well as subsetting goals in `initial_targets`. Here's an example that will collect 10% of a table named `public.target_table`.
+4. Setup your configuration and save it in `config.json`. The provided `config.json.example` has the skeleton of what you need to provide: source and destination database connection details, as well as subsetting goals in `initial_targets`. Here's an example that will collect 10% of a table named `public.target_table`.
 ```
 "initial_targets": [
     {
@@ -33,7 +33,8 @@ $ pip install mysql-connector-python
     }
 ]
 ```
-There may be more required configuration depending on your database, but simple databases should be easy. See the Config section for more details.
+There may be more required configuration depending on your database, but simple databases should be easy. See the Config section for more details, and `config.json.example_all` for all of the options in a single config file.
+
 5. Run! `$ python direct_subset.py`
 
 # Config
