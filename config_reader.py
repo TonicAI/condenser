@@ -56,6 +56,9 @@ def get_upstream_filters():
 def get_post_subset_sql():
     return _config["post_subset_sql"] if "post_subset_sql" in _config else []
 
+def get_max_rows_per_table():
+    return _config["max_rows_per_table"]
+
 def __convert_tonic_format(obj):
     if "fk_schema" in obj:
         return {

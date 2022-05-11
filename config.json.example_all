@@ -34,6 +34,7 @@
             "condition": "condition_applied_to_any_table_with_this_column > 42"
         }
     ],
+    "max_rows_per_table": 100000,
     "excluded_tables": [
         "public.table_to_ignore", "public.spatial_ref_sys"
     ],

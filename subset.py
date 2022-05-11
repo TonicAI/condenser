@@ -71,7 +71,7 @@ class Subset:
         start_time = time.time()
         for idx, t in enumerate(passthrough_tables):
             print_progress(t, idx+1, len(passthrough_tables))
-            q = 'SELECT * FROM {}'.format(fully_qualified_table(t))
+            q = 'SELECT * FROM {} LIMIT {}'.format(fully_qualified_table(t), config_reader.get_max_rows_per_table())
             self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, q, mysql_db_name_hack(t, self.__destination_conn))
         print('Pass-through completed in {}s'.format(time.time()-start_time))
 
@@ -128,17 +128,20 @@ class Subset:
         temp_target_name = 'subset_temp_' + table_name(target)
 
         try:
-            # copy the whole table
+            # copy the relevant rows into the temporary table
             columns_query = columns_to_copy(target, relationships, self.__source_conn)
+            table_columns = self.__db_helper.get_table_columns(table_name(target), schema_name(target), self.__source_conn)
+            filters = upstream_filter_match(target, table_columns)
             self.__db_helper.run_query('CREATE TEMPORARY TABLE {} AS SELECT * FROM {} LIMIT 0'.format(quoter(temp_target_name), fully_qualified_table(mysql_db_name_hack(target, self.__destination_conn))), self.__destination_conn)
             query = 'SELECT {} FROM {}'.format(columns_query, fully_qualified_table(target))
+            if filters:
+                query += ' WHERE ' + ' AND '.join(filters) 
+            query += " LIMIT {}".format(config_reader.get_max_rows_per_table())
             self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, query, temp_target_name)
-
-            # filter it down in the target database
-            table_columns = self.__db_helper.get_table_columns(table_name(target), schema_name(target), self.__source_conn)
+            
+            # recopy into the destination
             clauses = ['{} IN (SELECT {} FROM {})'.format(columns_tupled(kc['fk_columns']), columns_joined(kc['target_columns']), fully_qualified_table(mysql_db_name_hack(kc['target_table'], self.__destination_conn))) for kc in relevant_key_constraints]
-            clauses.extend(upstream_filter_match(target, table_columns))
-
+            clauses.extend(filters)
             select_query = 'SELECT * FROM {} WHERE TRUE AND {}'.format(quoter(temp_target_name), ' AND '.join(clauses))
             insert_query = 'INSERT INTO {} {}'.format(fully_qualified_table(mysql_db_name_hack(target, self.__destination_conn)), select_query)
             self.__db_helper.run_query(insert_query, self.__destination_conn)

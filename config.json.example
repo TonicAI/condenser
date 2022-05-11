@@ -19,6 +19,7 @@
         "port": 5432
     },
     "keep_disconnected_tables": false,
+    "max_rows_per_table": ALL,
     "excluded_tables": [ ],
     "passthrough_tables": [ ],
     "dependency_breaks": [ ],
