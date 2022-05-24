@@ -42,8 +42,6 @@ if __name__ == '__main__':
         subsetter.prep_temp_dbs()
         subsetter.run_middle_out()
 
-        if "--no-constraints" not in sys.argv:
-            database.add_constraints()
 
         print("Beginning post subset SQL calls")
         start_time = time.time()
@@ -51,7 +49,10 @@ if __name__ == '__main__':
             print_progress(sql, idx+1, len(config_reader.get_post_subset_sql()))
             db_helper.run_query(sql, destination_dbc.get_db_connection())
         print("Completed post subset SQL calls in {}s".format(time.time()-start_time))
-
+        
+        print("Adding database constraints")
+        if "--no-constraints" not in sys.argv:
+            database.add_constraints()
         result_tabulator.tabulate(source_dbc, destination_dbc, all_tables)
     finally:
         subsetter.unprep_temp_dbs()

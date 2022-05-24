@@ -127,31 +127,16 @@ class Subset:
 
         temp_target_name = 'subset_temp_' + table_name(target)
 
-        try:
-            # copy the relevant rows into the temporary table
-            columns_query = columns_to_copy(target, relationships, self.__source_conn)
-            table_columns = self.__db_helper.get_table_columns(table_name(target), schema_name(target), self.__source_conn)
-            filters = upstream_filter_match(target, table_columns)
-            self.__db_helper.run_query('CREATE TEMPORARY TABLE {} AS SELECT * FROM {} LIMIT 0'.format(quoter(temp_target_name), fully_qualified_table(mysql_db_name_hack(target, self.__destination_conn))), self.__destination_conn)
-            query = 'SELECT {} FROM {}'.format(columns_query, fully_qualified_table(target))
-            if filters:
-                query += ' WHERE ' + ' AND '.join(filters) 
-            query += " LIMIT {}".format(config_reader.get_max_rows_per_table())
-            self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, query, temp_target_name)
-            
-            # recopy into the destination
-            clauses = ['{} IN (SELECT {} FROM {})'.format(columns_tupled(kc['fk_columns']), columns_joined(kc['target_columns']), fully_qualified_table(mysql_db_name_hack(kc['target_table'], self.__destination_conn))) for kc in relevant_key_constraints]
-            clauses.extend(filters)
-            select_query = 'SELECT * FROM {} WHERE TRUE AND {}'.format(quoter(temp_target_name), ' AND '.join(clauses))
-            insert_query = 'INSERT INTO {} {}'.format(fully_qualified_table(mysql_db_name_hack(target, self.__destination_conn)), select_query)
-            self.__db_helper.run_query(insert_query, self.__destination_conn)
-            self.__destination_conn.commit()
-
-        finally:
-            # delete temporary table
-            mysql_temporary = 'TEMPORARY' if config_reader.get_db_type() == 'mysql' else ''
-            self.__db_helper.run_query('DROP {} TABLE IF EXISTS {}'.format(mysql_temporary, quoter(temp_target_name)), self.__destination_conn)
-
+        columns_query = columns_to_copy(target, relationships, self.__source_conn)
+        table_columns = self.__db_helper.get_table_columns(table_name(target), schema_name(target), self.__source_conn)
+        filters = upstream_filter_match(target, table_columns)
+        clauses = ['{} IN (SELECT {} FROM {})'.format(columns_tupled(kc['fk_columns']), columns_joined(kc['target_columns']), fully_qualified_table(mysql_db_name_hack(kc['target_table'], self.__source_conn))) for kc in relevant_key_constraints]
+        query = 'SELECT {} FROM {} WHERE TRUE AND {}'.format(columns_query, fully_qualified_table(target), ' AND '.join(clauses))
+        if len(filters) > 0:
+            query += ' AND ' + ' AND '.join(filters) 
+        query += " LIMIT {}".format(config_reader.get_max_rows_per_table())
+        self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, query, table_name(target))
+        
         return True
 
 
