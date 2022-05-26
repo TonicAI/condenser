@@ -162,7 +162,7 @@ class Subset:
             filters = upstream_filter_match(fk_table, fk_columns)
             q='SELECT {} FROM {} WHERE {} NOT IN (SELECT {} FROM {})'.format(columns_joined(fk_columns), fully_qualified_table(mysql_db_name_hack(fk_table, self.__destination_conn)), columns_tupled(fk_columns), columns_joined(pk_columns), fully_qualified_table(mysql_db_name_hack(table, self.__destination_conn)))
             if len(filters) > 0:
-                q += 'WHERE {}'.format( ' AND '.join(filters))
+                q += ' WHERE {}'.format( ' AND '.join(filters))
             q += " LIMIT {}".format(config_reader.get_max_rows_per_table())
             self.__db_helper.copy_rows(self.__destination_conn, self.__destination_conn, q, temp_table)
 
