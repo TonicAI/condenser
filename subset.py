@@ -159,10 +159,7 @@ class Subset:
             fk_table = r['fk_table']
             fk_columns = r['fk_columns']
 
-            filters = upstream_filter_match(fk_table, fk_columns)
             q='SELECT {} FROM {} WHERE {} NOT IN (SELECT {} FROM {})'.format(columns_joined(fk_columns), fully_qualified_table(mysql_db_name_hack(fk_table, self.__destination_conn)), columns_tupled(fk_columns), columns_joined(pk_columns), fully_qualified_table(mysql_db_name_hack(table, self.__destination_conn)))
-            if len(filters) > 0:
-                q += ' AND {}'.format( ' AND '.join(filters))
             q += " LIMIT {}".format(config_reader.get_max_rows_per_table())
             self.__db_helper.copy_rows(self.__destination_conn, self.__destination_conn, q, temp_table)
 
@@ -173,6 +170,7 @@ class Subset:
         cursor_query ='SELECT DISTINCT * FROM {}'.format(fully_qualified_table(temp_table))
         cursor.execute(cursor_query)
         fetch_row_count = 100000
+        filters = upstream_filter_match(fully_qualified_table(table), columns_query)
         while True:
             rows = cursor.fetchmany(fetch_row_count)
             if len(rows) == 0:
@@ -182,9 +180,12 @@ class Subset:
 
             if len(ids) == 0:
                 break
+            
 
             ids_to_query = ','.join(ids)
             q = 'SELECT {} FROM {} WHERE {} IN ({})'.format(columns_query, fully_qualified_table(table), columns_tupled(pk_columns), ids_to_query)
+            if len(filters) > 0:
+                q += ' AND {}'.format( ' AND '.join(filters))
             self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, q, mysql_db_name_hack(table, self.__destination_conn))
 
         cursor.close()
