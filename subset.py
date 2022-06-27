@@ -125,16 +125,31 @@ class Subset:
         if len(relevant_key_constraints) == 0 or target in processed_tables:
             return False
 
-        columns_query = columns_to_copy(target, relationships, self.__source_conn)
-        table_columns = self.__db_helper.get_table_columns(table_name(target), schema_name(target), self.__source_conn)
-        filters = upstream_filter_match(target, table_columns)
-        clauses = ['{} IN (SELECT {} FROM {})'.format(columns_tupled(kc['fk_columns']), columns_joined(kc['target_columns']), fully_qualified_table(mysql_db_name_hack(kc['target_table'], self.__source_conn))) for kc in relevant_key_constraints]
-        query = 'SELECT {} FROM {} WHERE TRUE AND {}'.format(columns_query, fully_qualified_table(target), ' AND '.join(clauses))
-        if len(filters) > 0:
-            query += ' AND ' + ' AND '.join(filters) 
-        query += " LIMIT {}".format(config_reader.get_max_rows_per_table())
-        self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, query, table_name(target))
-        
+        temp_target_name = 'subset_temp_' + table_name(target)
+
+        try:
+            # copy the whole table
+            columns_query = columns_to_copy(target, relationships, self.__source_conn)
+            self.__db_helper.run_query('CREATE TEMPORARY TABLE {} AS SELECT * FROM {} LIMIT 0'.format(quoter(temp_target_name), fully_qualified_table(mysql_db_name_hack(target, self.__destination_conn))), self.__destination_conn)
+            query = 'SELECT {} FROM {}'.format(columns_query, fully_qualified_table(target))
+            self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, query, temp_target_name)
+
+            # filter it down in the target database
+            table_columns = self.__db_helper.get_table_columns(table_name(target), schema_name(target), self.__source_conn)
+            clauses = ['{} IN (SELECT {} FROM {})'.format(columns_tupled(kc['fk_columns']), columns_joined(kc['target_columns']), fully_qualified_table(mysql_db_name_hack(kc['target_table'], self.__destination_conn))) for kc in relevant_key_constraints]
+            clauses.extend(upstream_filter_match(target, table_columns))
+
+            select_query = 'SELECT * FROM {} WHERE TRUE AND {}'.format(quoter(temp_target_name), ' AND '.join(clauses))
+            select_query += " LIMIT {}".format(config_reader.get_max_rows_per_table())
+            insert_query = 'INSERT INTO {} {}'.format(fully_qualified_table(mysql_db_name_hack(target, self.__destination_conn)), select_query)
+            self.__db_helper.run_query(insert_query, self.__destination_conn)
+            self.__destination_conn.commit()
+
+        finally:
+            # delete temporary table
+            mysql_temporary = 'TEMPORARY' if config_reader.get_db_type() == 'mysql' else ''
+            self.__db_helper.run_query('DROP {} TABLE IF EXISTS {}'.format(mysql_temporary, quoter(temp_target_name)), self.__destination_conn)
+
         return True
 
 
@@ -160,7 +175,6 @@ class Subset:
             fk_columns = r['fk_columns']
 
             q='SELECT {} FROM {} WHERE {} NOT IN (SELECT {} FROM {})'.format(columns_joined(fk_columns), fully_qualified_table(mysql_db_name_hack(fk_table, self.__destination_conn)), columns_tupled(fk_columns), columns_joined(pk_columns), fully_qualified_table(mysql_db_name_hack(table, self.__destination_conn)))
-            q += " LIMIT {}".format(config_reader.get_max_rows_per_table())
             self.__db_helper.copy_rows(self.__destination_conn, self.__destination_conn, q, temp_table)
 
         columns_query = columns_to_copy(table, relationships, self.__source_conn)
@@ -170,7 +184,6 @@ class Subset:
         cursor_query ='SELECT DISTINCT * FROM {}'.format(fully_qualified_table(temp_table))
         cursor.execute(cursor_query)
         fetch_row_count = 100000
-        filters = upstream_filter_match(fully_qualified_table(table), columns_query)
         while True:
             rows = cursor.fetchmany(fetch_row_count)
             if len(rows) == 0:
@@ -180,12 +193,9 @@ class Subset:
 
             if len(ids) == 0:
                 break
-            
 
             ids_to_query = ','.join(ids)
             q = 'SELECT {} FROM {} WHERE {} IN ({})'.format(columns_query, fully_qualified_table(table), columns_tupled(pk_columns), ids_to_query)
-            if len(filters) > 0:
-                q += ' AND {}'.format( ' AND '.join(filters))
             self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, q, mysql_db_name_hack(table, self.__destination_conn))
 
         cursor.close()

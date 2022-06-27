@@ -71,7 +71,9 @@ Below we describe the use of all configuration parameters, but the best place to
 
 `max_rows_per_table`: This is interpreted as a limit on all of the tables to be copied. Useful if you have some very large tables that you want a sampling from. For an unlimited dataset (recommended) set this parameter to `ALL`.
 
-`post_subset_sql`: An array of SQL commands that will be issued on the destination database after subsetting is complete. Useful to perform additional adhoc tasks after subsetting.
+`pre_constraint_sql`: An array of SQL commands that will be issued on the destination database after subsetting is complete, but before the database constraints have been applied. Useful to perform tasks that will clean up any data that would otherwise violate the database constraints. `post_subset_sql` is the preferred option for any general purpose queries.
+
+`post_subset_sql`: An array of SQL commands that will be issued on the destination database after subsetting is complete, and after the database constraints have been applied. Useful to perform additional adhoc tasks after subsetting.
 
 # Running
 

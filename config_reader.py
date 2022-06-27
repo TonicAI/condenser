@@ -53,6 +53,9 @@ def get_fk_augmentation():
 def get_upstream_filters():
     return _config["upstream_filters"]
 
+def get_pre_constraint_sql():
+    return _config["pre_constraint_sql"] if "pre_constraint_sql" in _config else []
+
 def get_post_subset_sql():
     return _config["post_subset_sql"] if "post_subset_sql" in _config else []
 
