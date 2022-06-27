@@ -69,7 +69,11 @@ Below we describe the use of all configuration parameters, but the best place to
 
 `keep_disconnected_tables`: If `true` tables that the subset target(s) don't reach, when following foreign keys, will be copied 100% over. If it's `false` then their schema will be copied but the table contents will be empty. Put more mathematically, the tables and foreign keys create a graph (where tables are nodes and foreign keys are directed edges) disconnected tables are the tables in components that don't contain any targets. This setting decides how to import those tables.
 
-`post_subset_sql`: An array of SQL commands that will be issued on the destination database after subsetting is complete. Useful to perform additional adhoc tasks after subsetting.
+`max_rows_per_table`: This is interpreted as a limit on all of the tables to be copied. Useful if you have some very large tables that you want a sampling from. For an unlimited dataset (recommended) set this parameter to `ALL`.
+
+`pre_constraint_sql`: An array of SQL commands that will be issued on the destination database after subsetting is complete, but before the database constraints have been applied. Useful to perform tasks that will clean up any data that would otherwise violate the database constraints. `post_subset_sql` is the preferred option for any general purpose queries.
+
+`post_subset_sql`: An array of SQL commands that will be issued on the destination database after subsetting is complete, and after the database constraints have been applied. Useful to perform additional adhoc tasks after subsetting.
 
 # Running
 

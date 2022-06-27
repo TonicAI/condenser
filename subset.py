@@ -72,6 +72,8 @@ class Subset:
         for idx, t in enumerate(passthrough_tables):
             print_progress(t, idx+1, len(passthrough_tables))
             q = 'SELECT * FROM {}'.format(fully_qualified_table(t))
+            if config_reader.get_max_rows_per_table() is not None:
+                q += 'LIMIT {}'.format(config_reader.get_max_rows_per_table())
             self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, q, mysql_db_name_hack(t, self.__destination_conn))
         print('Pass-through completed in {}s'.format(time.time()-start_time))
 
@@ -140,6 +142,8 @@ class Subset:
             clauses.extend(upstream_filter_match(target, table_columns))
 
             select_query = 'SELECT * FROM {} WHERE TRUE AND {}'.format(quoter(temp_target_name), ' AND '.join(clauses))
+            if config_reader.get_max_rows_per_table() is not None:
+                select_query += " LIMIT {}".format(config_reader.get_max_rows_per_table())
             insert_query = 'INSERT INTO {} {}'.format(fully_qualified_table(mysql_db_name_hack(target, self.__destination_conn)), select_query)
             self.__db_helper.run_query(insert_query, self.__destination_conn)
             self.__destination_conn.commit()

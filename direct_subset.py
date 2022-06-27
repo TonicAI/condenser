@@ -42,6 +42,15 @@ if __name__ == '__main__':
         subsetter.prep_temp_dbs()
         subsetter.run_middle_out()
 
+        print("Beginning pre constraint SQL calls")
+        start_time = time.time()
+        for idx, sql in enumerate(config_reader.get_pre_constraint_sql()):
+            print_progress(sql, idx+1, len(config_reader.get_pre_constraint_sql()))
+            db_helper.run_query(sql, destination_dbc.get_db_connection())
+        print("Completed pre constraint SQL calls in {}s".format(time.time()-start_time))
+        
+
+        print("Adding database constraints")
         if "--no-constraints" not in sys.argv:
             database.add_constraints()
 
