@@ -1,9 +1,11 @@
-from toposort import toposort, toposort_flatten
 import config_reader
+from toposort import toposort
+
 
 def get_topological_order_by_tables(relationships, tables):
-    topsort_input =  __prepare_topsort_input(relationships, tables)
+    topsort_input = __prepare_topsort_input(relationships, tables)
     return list(toposort(topsort_input))
+
 
 def __prepare_topsort_input(relationships, tables):
     dep_breaks = config_reader.get_dependency_breaks()
@@ -12,7 +14,7 @@ def __prepare_topsort_input(relationships, tables):
         p =r['fk_table']
         c =r['target_table']
 
-        #break circ dependency
+        # break circ dependency
         dep_break_found = False
         for dep_break in dep_breaks:
             if p == dep_break.fk_table and c == dep_break.target_table:

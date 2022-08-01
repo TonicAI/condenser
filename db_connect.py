@@ -1,6 +1,13 @@
+import datetime
+import getpass
+import sys
+import time
+
+import mysql.connector
+import psycopg2
+
 import config_reader
-import psycopg2, mysql.connector
-import os, pathlib, re, urllib, subprocess, os.path, json, getpass, time, sys, datetime
+
 
 class DbConnect:
 
@@ -16,7 +23,9 @@ class DbConnect:
             if r not in connection_info.keys():
                 raise Exception('Missing required key in database connection info: ' + r)
         if 'password' not in connection_info.keys():
-            connection_info['password'] = getpass.getpass('Enter password for {0} on host {1}: '.format(connection_info['user_name'], connection_info['host']))
+            connection_info['password'] = getpass.getpass('Enter password for {0} on host {1}: '.format(
+                connection_info['user_name'],
+                connection_info['host']))
 
         self.user = connection_info['user_name']
         self.password = connection_info['password']
@@ -34,6 +43,7 @@ class DbConnect:
             return MySqlConnection(self, read_repeatable)
         else:
             raise ValueError('unknown db_type ' + self.__db_type)
+
 
 class DbConnection:
     def __init__(self, connection):
@@ -70,11 +80,13 @@ class LoggingCursor:
     def __enter__(self):
         return LoggingCursor(self.inner_cursor.__enter__())
 
+
 # small wrapper to the connection class that gives us a common interface to the cursor()
 # method across MySQL and Postgres. This one is for Postgres
 class PsqlConnection(DbConnection):
     def __init__(self,  connect, read_repeatable):
-        connection_string = 'dbname=\'{0}\' user=\'{1}\' password=\'{2}\' host={3} port={4}'.format(connect.db_name, connect.user, connect.password, connect.host, connect.port)
+        connection_string = 'dbname=\'{0}\' user=\'{1}\' password=\'{2}\' host={3} port={4}'.format(
+            connect.db_name, connect.user, connect.password, connect.host, connect.port)
 
         if connect.ssl_mode :
             connection_string = connection_string + ' sslmode={0}'.format(connect.ssl_mode)
@@ -91,7 +103,12 @@ class PsqlConnection(DbConnection):
 # method across MySQL and Postgres. This one is for MySQL
 class MySqlConnection(DbConnection):
     def __init__(self,  connect, read_repeatable):
-        DbConnection.__init__(self, mysql.connector.connect(host=connect.host, port=connect.port, user=connect.user, password=connect.password, database=connect.db_name))
+        DbConnection.__init__(self, mysql.connector.connect(
+            host=connect.host,
+            port=connect.port,
+            user=connect.user,
+            password=connect.password,
+            database=connect.db_name))
 
         self.db_name = connect.db_name
 

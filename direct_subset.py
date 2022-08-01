@@ -1,12 +1,15 @@
-import uuid, sys
-import config_reader, result_tabulator
+import sys
 import time
-from subset import Subset
-from psql_database_creator import PsqlDatabaseCreator
-from mysql_database_creator import MySqlDatabaseCreator
-from db_connect import DbConnect
-from subset_utils import print_progress
+
+import config_reader
 import database_helper
+import result_tabulator
+from db_connect import DbConnect
+from mysql_database_creator import MySqlDatabaseCreator
+from psql_database_creator import PsqlDatabaseCreator
+from subset import Subset
+from subset_utils import print_progress
+
 
 def db_creator(db_type, source, dest):
     if db_type == 'postgres':
@@ -48,7 +51,6 @@ if __name__ == '__main__':
             print_progress(sql, idx+1, len(config_reader.get_pre_constraint_sql()))
             db_helper.run_query(sql, destination_dbc.get_db_connection())
         print("Completed pre constraint SQL calls in {}s".format(time.time()-start_time))
-        
 
         print("Adding database constraints")
         if "--no-constraints" not in sys.argv:
@@ -64,5 +66,3 @@ if __name__ == '__main__':
         result_tabulator.tabulate(source_dbc, destination_dbc, all_tables)
     finally:
         subsetter.unprep_temp_dbs()
-
-
