@@ -18,6 +18,7 @@ from subset_utils import (
     redact_relationships,
     schema_name,
     table_name,
+    target_filter_match,
     upstream_filter_match
 )
 from topo_orderer import get_topological_order_by_tables
@@ -187,12 +188,15 @@ class Subset:
         temp_target_name = 'subset_temp_' + table_name(target)
 
         try:
-            # copy the whole table
+            # copy the original table
             columns_query = columns_to_copy(target, relationships, self.__source_conn)
             self.__db_helper.run_query('CREATE TEMPORARY TABLE {} AS SELECT * FROM {} LIMIT 0'.format(
                 quoter(temp_target_name), fully_qualified_table(mysql_db_name_hack(target, self.__destination_conn))),
                 self.__destination_conn)
             query = 'SELECT {} FROM {}'.format(columns_query, fully_qualified_table(target))
+            if target_filter_match(target):
+                query = query + ' WHERE ' + ' AND '.join(target_filter_match(target))
+
             self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, query, temp_target_name)
 
             # filter it down in the target database
@@ -201,23 +205,18 @@ class Subset:
 
             clauses = []
             # This is where we look at the FK augmentation.
+            fk_constraints = []
             for kc in relevant_key_constraints:
+                clause = '{} IN (SELECT {} FROM {})'.format(
+                    columns_tupled(kc['fk_columns']),
+                    columns_joined(kc['target_columns']),
+                    fully_qualified_table(mysql_db_name_hack(kc['target_table'], self.__destination_conn))
+                )
                 if kc.get('polymorphic_type'):
-                    clause = '{} IN (SELECT {} FROM {}) AND {}'.format(
-                        columns_tupled(kc['fk_columns']),
-                        columns_joined(kc['target_columns']),
-                        fully_qualified_table(mysql_db_name_hack(kc['target_table'], self.__destination_conn)),
-                        kc['polymorphic_type']
-                    )
-                    clauses.append(clause)
-                else:
-                    clause = '{} IN (SELECT {} FROM {})'.format(
-                        columns_tupled(kc['fk_columns']),
-                        columns_joined(kc['target_columns']),
-                        fully_qualified_table(mysql_db_name_hack(kc['target_table'], self.__destination_conn))
-                    )
-                    clauses.append(clause)
+                    clause = clause + ' AND {}'.format(kc['polymorphic_type'])
+                fk_constraints.extend([clause])
 
+            clauses.append(' OR '.join(fk_constraints))
             clauses.extend(upstream_filter_match(target, table_columns))
 
             select_query = 'SELECT * FROM {} WHERE TRUE AND {}'.format(quoter(temp_target_name), ' AND '.join(clauses))
