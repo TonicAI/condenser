@@ -1,10 +1,20 @@
-import os, uuid, csv
-import config_reader
-from pathlib import Path
-from subset_utils import columns_joined, columns_tupled, quoter, schema_name, table_name, fully_qualified_table, redact_relationships
+import uuid
 
-system_schemas_str = ','.join(['\'' + schema + '\'' for schema in  ['information_schema', 'performance_schema', 'sys', 'mysql', 'innodb','tmp']])
+import config_reader
+from subset_utils import (
+    columns_joined,
+    columns_tupled,
+    fully_qualified_table,
+    quoter,
+    redact_relationships,
+    schema_name,
+    table_name
+)
+
+system_schemas_str = ','.join(['\'' + schema + '\'' for schema in
+                               ['information_schema', 'performance_schema', 'sys', 'mysql', 'innodb', 'tmp']])
 temp_db = 'tonic_subset_temp_db_398dhjr23'
+
 
 def prep_temp_dbs(source_conn, destination_conn):
     run_query('DROP DATABASE IF EXISTS ' + temp_db, source_conn)
@@ -12,9 +22,11 @@ def prep_temp_dbs(source_conn, destination_conn):
     run_query('CREATE DATABASE IF NOT EXISTS ' + temp_db, source_conn)
     run_query('CREATE DATABASE IF NOT EXISTS ' + temp_db, destination_conn)
 
+
 def unprep_temp_dbs(source_conn, destination_conn):
     run_query('DROP DATABASE IF EXISTS ' + temp_db, source_conn)
     run_query('DROP DATABASE IF EXISTS ' + temp_db, destination_conn)
+
 
 def turn_off_constraints(connection):
     cur = connection.cursor()
@@ -22,6 +34,7 @@ def turn_off_constraints(connection):
         cur.execute('SET UNIQUE_CHECKS=0, FOREIGN_KEY_CHECKS=0;')
     finally:
         cur.close()
+
 
 def copy_rows(source, destination, query, destination_table):
     cursor = source.cursor()
@@ -53,6 +66,7 @@ def copy_rows(source, destination, query, destination_table):
     finally:
         cursor.close()
 
+
 def create_id_temp_table(conn, number_of_columns):
     temp_table = temp_db + '.' + str(uuid.uuid4())
     cursor = conn.cursor()
@@ -62,17 +76,20 @@ def create_id_temp_table(conn, number_of_columns):
     cursor.close()
     return temp_table
 
-def copy_to_temp_table(conn, query, target_table, pk_columns = None):
+
+def copy_to_temp_table(conn, query, target_table, pk_columns=None):
     cur = conn.cursor()
     temp_table = fully_qualified_table(source_db_temp_table(target_table))
     try:
         cur.execute('CREATE TABLE IF NOT EXISTS ' + temp_table + ' AS ' + query + ' LIMIT 0')
         if pk_columns:
-            query = query + ' WHERE {} NOT IN (SELECT {} FROM {})'.format(columns_tupled(pk_columns), columns_joined(pk_columns), temp_table)
+            query = query + ' WHERE {} NOT IN (SELECT {} FROM {})'.format(
+                columns_tupled(pk_columns), columns_joined(pk_columns), temp_table)
         cur.execute('INSERT INTO ' + temp_table + ' ' + query)
         conn.commit()
     finally:
         cur.close()
+
 
 def clean_temp_table_cells(fk_table, fk_columns, target_table, target_columns, conn):
     fk_alias = 'tonic_subset_398dhjr23_fk'
@@ -81,19 +98,24 @@ def clean_temp_table_cells(fk_table, fk_columns, target_table, target_columns, c
     fk_table = fully_qualified_table(source_db_temp_table(fk_table))
     target_table = fully_qualified_table(source_db_temp_table(target_table))
     assignment_list = ','.join(['{}.{} = NULL'.format(fk_alias, quoter(c)) for c in fk_columns])
-    column_matching = ' AND '.join(['{}.{} = {}.{}'.format(fk_alias, quoter(fc), target_alias, quoter(tc)) for fc, tc in zip(fk_columns, target_columns)])
+    column_matching = ' AND '.join(['{}.{} = {}.{}'.format(
+        fk_alias, quoter(fc), target_alias, quoter(tc)) for fc, tc in zip(fk_columns, target_columns)])
     target_columns_null = ' AND '.join(['{}.{} IS NULL'.format(target_alias, quoter(tc)) for tc in target_columns]
         + ['{}.{} IS NOT NULL'.format(fk_alias, quoter(c)) for c in fk_columns])
-    q = 'UPDATE {} {} LEFT JOIN {} {} ON {} SET {} WHERE {}'.format(fk_table, fk_alias, target_table, target_alias, column_matching, assignment_list, target_columns_null)
+    q = 'UPDATE {} {} LEFT JOIN {} {} ON {} SET {} WHERE {}'.format(
+        fk_table, fk_alias, target_table, target_alias, column_matching, assignment_list, target_columns_null)
     run_query(q, conn)
+
 
 def source_db_temp_table(target_table):
     return temp_db + '.' + schema_name(target_table) + '_' + table_name(target_table)
+
 
 def get_redacted_table_references(table_name, tables, conn):
     relationships = get_unredacted_fk_relationships(tables, conn)
     redacted = redact_relationships(relationships)
     return [r for r in redacted if r['target_table']==table_name]
+
 
 def get_unredacted_fk_relationships(tables, conn):
     cur = conn.cursor()
@@ -138,6 +160,7 @@ def get_unredacted_fk_relationships(tables, conn):
 
     return relationships
 
+
 def run_query(query, conn, commit=True):
     cur = conn.cursor()
     try:
@@ -147,10 +170,12 @@ def run_query(query, conn, commit=True):
     finally:
         cur.close()
 
+
 def get_table_count_estimate(table_name, schema, conn):
     cur = conn.cursor()
     try:
-        cur.execute('SELECT table_rows AS count FROM information_schema.tables WHERE table_schema=\'{}\' AND table_name=\'{}\''.format(schema, table_name))
+        cur.execute('SELECT table_rows AS count FROM information_schema.tables WHERE table_schema=\'{}\' AND '
+                    'table_name=\'{}\''.format(schema, table_name))
         return cur.fetchone()[0]
     finally:
         cur.close()
@@ -158,10 +183,12 @@ def get_table_count_estimate(table_name, schema, conn):
 def get_table_columns(table, schema, conn):
     cur = conn.cursor()
     try:
-        cur.execute('SELECT column_name FROM information_schema.columns WHERE table_schema = \'{}\' AND table_name = \'{}\' ORDER BY ordinal_position'.format(schema, table))
+        cur.execute('SELECT column_name FROM information_schema.columns WHERE table_schema = \'{}\' AND '
+                    'table_name = \'{}\' ORDER BY ordinal_position'.format(schema, table))
         return [r[0] for r in cur.fetchall()]
     finally:
         cur.close()
+
 
 def list_all_tables(db_connect):
     conn = db_connect.get_db_connection()
@@ -177,6 +204,7 @@ def list_all_tables(db_connect):
         return [r[0] for r in cur.fetchall()]
     finally:
         cur.close()
+
 
 def truncate_table(target_table, conn):
     cur = conn.cursor()

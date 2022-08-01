@@ -2,6 +2,7 @@ import config_reader
 import database_helper
 from db_connect import MySqlConnection
 
+
 # this function generally copies all columns as is, but if the table has been selected as
 # breaking a dependency cycle, then it will insert NULLs instead of that table's foreign keys
 # to the downstream dependency that breaks the cycle
@@ -18,7 +19,9 @@ def columns_to_copy(table, relationships, conn):
             columns_to_null.update(rel['fk_columns'])
 
     columns = database_helper.get_specific_helper().get_table_columns(table_name(table), schema_name(table), conn)
-    return ','.join(['{}.{}'.format(quoter(table_name(table)), quoter(c)) if c not in columns_to_null else 'NULL as {}'.format(quoter(c)) for c in columns])
+    return ','.join(['{}.{}'.format(quoter(table_name(table)), quoter(c))
+                     if c not in columns_to_null else 'NULL as {}'.format(quoter(c)) for c in columns])
+
 
 def upstream_filter_match(target, table_columns):
     retval = []
@@ -30,16 +33,19 @@ def upstream_filter_match(target, table_columns):
             retval.append(filter["condition"])
     return retval
 
+
 def redact_relationships(relationships):
     breaks = config_reader.get_dependency_breaks()
     retval = [r for r in relationships if (r['fk_table'], r['target_table']) not in breaks]
     return retval
+
 
 def find(f, seq):
     """Return first item in sequence where f(item) == True."""
     for item in seq:
         if f(item):
             return item
+
 
 def compute_upstream_tables(target_tables, order):
     upstream_tables = []
@@ -51,12 +57,15 @@ def compute_upstream_tables(target_tables, order):
             in_upstream = True
     return upstream_tables
 
+
 def compute_downstream_tables(passthrough_tables, disconnected_tables, order):
     downstream_tables = []
     for strata in order:
         downstream_tables.extend(strata)
-    downstream_tables = list(reversed(list(filter(lambda table: table not in passthrough_tables and table not in disconnected_tables, downstream_tables))))
+    downstream_tables = list(reversed(list(filter(
+        lambda table: table not in passthrough_tables and table not in disconnected_tables, downstream_tables))))
     return downstream_tables
+
 
 def compute_disconnected_tables(target_tables, passthrough_tables, all_tables, relationships):
     uf = UnionFind()
@@ -69,31 +78,39 @@ def compute_disconnected_tables(target_tables, passthrough_tables, all_tables, r
     connected_components.update([uf.find(pt) for pt in passthrough_tables])
     return [t for t in all_tables if uf.find(t) not in connected_components]
 
+
 def fully_qualified_table(table):
     if '.' in table:
         return quoter(schema_name(table)) + '.' + quoter(table_name(table))
     else:
         return quoter(table_name(table))
 
+
 def schema_name(table):
     return table.split('.')[0] if '.' in table else None
+
 
 def table_name(table):
     split = table.split('.')
     return split[1] if len(split) > 1 else split[0]
 
+
 def columns_tupled(columns):
     return '(' + ','.join([quoter(c) for c in columns]) + ')'
 
+
 def columns_joined(columns):
     return ','.join([quoter(c) for c in columns])
+
 
 def quoter(id):
     q = '"' if config_reader.get_db_type() == 'postgres' else '`'
     return q + id + q
 
+
 def print_progress(target, idx, count):
     print('Processing {} of {}: {}'.format(idx, count, target))
+
 
 class UnionFind:
 
@@ -111,7 +128,7 @@ class UnionFind:
 
     def find(self, elem):
         x = self.elementsToId[elem]
-        if x == None:
+        if x is None:
             return None
 
         rootId = self.find_internal(x)
@@ -172,8 +189,9 @@ class UnionFind:
 
         return retval
 
+
 def mysql_db_name_hack(target, conn):
-    if not isinstance(conn, MySqlConnection) or '.' not in  target:
+    if not isinstance(conn, MySqlConnection) or '.' not in target:
         return target
     else:
         return conn.db_name + '.' + table_name(target)

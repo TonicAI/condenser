@@ -1,10 +1,9 @@
-import config_reader
 import database_helper
 from db_connect import MySqlConnection
 
 
 def tabulate(source_dbc, destination_dbc, tables):
-    #tabulate
+    # tabulate
     row_counts = list()
     source_conn = source_dbc.get_db_connection()
     dest_conn = destination_dbc.get_db_connection()
@@ -24,6 +23,7 @@ def tabulate(source_dbc, destination_dbc, tables):
 
 def schema_name(table):
     return table.split('.')[0]
+
 
 def table_name(table):
     return table.split('.')[1]

@@ -1,6 +1,9 @@
-import os, urllib, subprocess
-from db_connect import DbConnect
+import os
+import subprocess
+import urllib
+
 import database_helper
+
 
 class PsqlDatabaseCreator:
     def __init__(self, source_dbc, destination_dbc, use_existing_dump = False):
@@ -22,7 +25,6 @@ class PsqlDatabaseCreator:
         if os.path.exists(self.add_constraint_error_path):
             os.remove(self.add_constraint_error_path)
 
-
         self.create_output_path = os.path.join(os.getcwd(), 'SQL', 'create_output.txt')
         self.create_error_path = os.path.join(os.getcwd(), 'SQL', 'create_error.txt')
 
@@ -32,8 +34,7 @@ class PsqlDatabaseCreator:
             os.remove(self.create_error_path)
 
     def create(self):
-
-        if self.use_existing_dump == True:
+        if self.use_existing_dump:
             pass
         else:
             cur_path = os.getcwd()
@@ -42,12 +43,19 @@ class PsqlDatabaseCreator:
             if pg_dump_path != '':
                 os.chdir(pg_dump_path)
 
-            connection = '--dbname=postgresql://{0}@{2}:{3}/{4}?{1}'.format(self.source_dbc.user, urllib.parse.urlencode({'password': self.source_dbc.password}), self.source_dbc.host, self.source_dbc.port, self.source_dbc.db_name)
+            connection = '--dbname=postgresql://{0}@{2}:{3}/{4}?{1}'.format(
+                self.source_dbc.user,
+                urllib.parse.urlencode({'password': self.source_dbc.password}),
+                self.source_dbc.host,
+                self.source_dbc.port,
+                self.source_dbc.db_name
+            )
 
-            result = subprocess.run(['pg_dump', connection, '--schema-only', '--no-owner', '--no-privileges', '--section=pre-data']
-                    , stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+            result = subprocess.run(
+                ['pg_dump', connection, '--schema-only', '--no-owner', '--no-privileges', '--section=pre-data'],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode != 0 or contains_errors(result.stderr):
-                raise Exception('Captuing pre-data schema failed. Details:\n{}'.format(result.stderr))
+                raise Exception('Capturing pre-data schema failed. Details:\n{}'.format(result.stderr))
             os.chdir(cur_path)
 
             pre_data_sql = self.__filter_commands(result.stdout.decode('utf-8'))
@@ -66,9 +74,8 @@ class PsqlDatabaseCreator:
 
         self.run_query(q)
 
-
     def add_constraints(self):
-        if self.use_existing_dump == True:
+        if self.use_existing_dump:
             pass
         else:
             cur_path = os.getcwd()
@@ -76,14 +83,21 @@ class PsqlDatabaseCreator:
             pg_dump_path = get_pg_bin_path()
             if pg_dump_path != '':
                 os.chdir(pg_dump_path)
-            connection = '--dbname=postgresql://{0}@{2}:{3}/{4}?{1}'.format(self.source_dbc.user, urllib.parse.urlencode({'password': self.source_dbc.password}), self.source_dbc.host, self.source_dbc.port, self.source_dbc.db_name)
-            result = subprocess.run(['pg_dump', connection, '--schema-only', '--no-owner', '--no-privileges', '--section=post-data']
-                    , stderr = subprocess.PIPE, stdout = subprocess.PIPE)
+            connection = '--dbname=postgresql://{0}@{2}:{3}/{4}?{1}'.format(
+                self.source_dbc.user,
+                urllib.parse.urlencode({'password': self.source_dbc.password}),
+                self.source_dbc.host,
+                self.source_dbc.port,
+                self.source_dbc.db_name
+            )
+            result = subprocess.run(
+                ['pg_dump', connection, '--schema-only', '--no-owner', '--no-privileges', '--section=post-data'],
+                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE)
             if result.returncode != 0 or contains_errors(result.stderr):
-                raise Exception('Captuing post-data schema failed. Details:\n{}'.format(result.stderr))
+                raise Exception('Capturing post-data schema failed. Details:\n{}'.format(result.stderr))
 
             os.chdir(cur_path)
-
             self.run_psql(result.stdout.decode('utf-8'))
 
     def __filter_commands(self, input):
@@ -112,16 +126,23 @@ class PsqlDatabaseCreator:
         pg_dump_path = get_pg_bin_path()
         cur_path = os.getcwd()
 
-        if(pg_dump_path != ''):
+        if pg_dump_path != '':
             os.chdir(pg_dump_path)
 
         connection_info = self.destination_dbc
         connection_string = '--dbname=postgresql://{0}@{2}:{3}/{4}?{1}'.format(
-                    connection_info.user, urllib.parse.urlencode({'password': connection_info.password}), connection_info.host,
-                    connection_info.port, connection_info.db_name)
+            connection_info.user,
+            urllib.parse.urlencode({'password': connection_info.password}),
+            connection_info.host,
+            connection_info.port,
+            connection_info.db_name
+        )
 
-
-        result = subprocess.run(['psql', connection_string, '-c {0}'.format(query)], stderr = subprocess.PIPE, stdout = subprocess.DEVNULL)
+        result = subprocess.run(
+            ['psql', connection_string, '-c {0}'.format(query)],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.DEVNULL
+        )
         if result.returncode != 0 or contains_errors(result.stderr):
             raise Exception('Running query: "{}" failed. Details:\n{}'.format(query, result.stderr))
 
@@ -132,20 +153,27 @@ class PsqlDatabaseCreator:
         pg_dump_path = get_pg_bin_path()
         cur_path = os.getcwd()
 
-        if(pg_dump_path != ''):
+        if pg_dump_path != '':
             os.chdir(pg_dump_path)
 
         connect = self.destination_dbc
         connection_string = '--dbname=postgresql://{0}@{2}:{3}/{4}?{1}'.format(
             connect.user, urllib.parse.urlencode({'password': connect.password}), connect.host,
-            connect.port, connect.db_name)
+            connect.port, connect.db_name
+        )
 
         input = queries.encode('utf-8')
-        result = subprocess.run(['psql', connection_string], stderr = subprocess.PIPE, input = input, stdout= subprocess.DEVNULL)
+        result = subprocess.run(
+            ['psql', connection_string],
+            stderr=subprocess.PIPE,
+            input=input,
+            stdout=subprocess.DEVNULL
+        )
         if result.returncode != 0 or contains_errors(result.stderr):
             raise Exception('Creating schema failed. Details:\n{}'.format(result.stderr))
 
         os.chdir(cur_path)
+
 
 def get_pg_bin_path():
     if 'POSTGRES_PATH' in os.environ:
@@ -154,9 +182,10 @@ def get_pg_bin_path():
         pg_dump_path = ''
     err = os.system('"' + os.path.join(pg_dump_path, 'pg_dump') + '"' + ' --help > ' + os.devnull)
     if err != 0:
-        raise Exception("Couldn't find Postgres utilities, consider specifying POSTGRES_PATH environment variable if Postgres isn't " +
-            "in your PATH.")
+        raise Exception("Couldn't find Postgres utilities, consider specifying POSTGRES_PATH environment variable if "
+                        "Postgres isn't in your PATH.")
     return pg_dump_path
+
 
 def contains_errors(stderr):
     msgs = stderr.decode('utf-8')

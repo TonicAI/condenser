@@ -1,10 +1,11 @@
-import os, urllib, subprocess, io
+import os
+import subprocess
+
 
 class MySqlDatabaseCreator:
     def __init__(self, source_connect, destination_connect):
         self.__source_connect = source_connect
         self.__destination_connect = destination_connect
-
 
     def create(self):
         cur_path = os.getcwd()
@@ -15,22 +16,21 @@ class MySqlDatabaseCreator:
 
         ca = connection_args(self.__source_connect)
         args = ['mysqldump', '-d'] + ca + [self.__source_connect.db_name]
-        result = subprocess.run(args, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+        result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.returncode != 0:
             raise Exception('Capturing schema failed. Details:\n{}'.format(result.stderr))
         commands_to_create_schema = result.stdout
 
         ca = connection_args(self.__destination_connect)
         args = ['mysql'] + ca + ['-e', 'CREATE DATABASE ' + self.__destination_connect.db_name]
-        result = subprocess.run(args, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+        result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.returncode != 0:
             raise Exception('Creating destination database failed. Details:\n{}'.format(result.stderr))
 
         args = ['mysql', '-D', self.__destination_connect.db_name] + ca
-        result = subprocess.run(args, stdout = subprocess.PIPE, stderr = subprocess.PIPE, input=commands_to_create_schema)
+        result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, input=commands_to_create_schema)
         if result.returncode != 0:
             raise Exception('Creating destination schema. Details:\n{}'.format(result.stderr))
-
 
         os.chdir(cur_path)
 
@@ -54,6 +54,7 @@ class MySqlDatabaseCreator:
         if result.returncode != 0:
             raise Exception('Failed to run command \'{}\'. Details:\n{}'.format(command, result.stderr))
 
+
 def get_mysql_bin_path():
     if 'MYSQL_PATH' in os.environ:
         mysql_bin_path = os.environ['MYSQL_PATH']
@@ -61,9 +62,10 @@ def get_mysql_bin_path():
         mysql_bin_path = ''
     err = os.system('"' + os.path.join(mysql_bin_path, 'mysqldump') + '"' + ' --help > ' + os.devnull)
     if err != 0:
-        raise Exception("Couldn't find MySQL utilities, consider specifying MYSQL_PATH environment variable if MySQL isn't " +
-            "in your PATH.")
+        raise Exception("Couldn't find MySQL utilities, consider specifying MYSQL_PATH environment variable if"
+                        " MySQL isn't in your PATH.")
     return mysql_bin_path
+
 
 def connection_args(connect):
     host_arg = '--host={}'.format(connect.host)
