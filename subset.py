@@ -167,6 +167,23 @@ class Subset:
         if len(relevant_key_constraints) == 0 or target in processed_tables:
             return False
 
+        # testing change to reduce iteration time, please remove after testing
+        if target in ['public.mailboxer_receipts', 'public.hiptag_tagging_sources', 'public.markets_parks',
+                      'public.parks_fire_alerts', 'public.gmb_accounts',
+                      'public.booking_checkout_rv_details', 'public.tax_rates',
+                      'public.park_messages', 'public.fire_bans', 'public.booking_night_price_details',
+                      'public.campground_park_messages', 'public.scheduled_messages',
+                      'public.internal_notes', 'public.host_reviews', 'public.payment_methodsx',
+                      'public.discounts', 'public.camper_service_fee_refunds',
+                      'public.user_credit_cards', 'public.user_rv_details', 'public.park_setups',
+                      'analytics.user_facts', 'public.host_service_fee_refunds', 'public.camper_reviews',
+                      'public.bulk_import_files', 'public.saved_lists', 'public.discount_email_auths',
+                      'public.feedback_to_campers', 'public.feedback_to_hosts', 'public.contributed_tips',
+                      'public.favorite_campgrounds', 'public.discount_park_auths', 'public.recommends',
+                      'public.discount_domain_auths', 'public.quality_answers', 'public.discount_campground_auths',
+                      'public.discount_stay_dates']:
+            return False
+
         temp_target_name = 'subset_temp_' + table_name(target)
 
         try:

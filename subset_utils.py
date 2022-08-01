@@ -24,14 +24,14 @@ def columns_to_copy(table, relationships, conn):
 
 
 def upstream_filter_match(target, table_columns):
-    retval = []
+    ret_val = []
     filters = config_reader.get_upstream_filters()
-    for filter in filters:
-        if "table" in filter and target == filter["table"]:
-            retval.append(filter["condition"])
-        if "column" in filter and filter["column"] in table_columns:
-            retval.append(filter["condition"])
-    return retval
+    for f in filters:
+        if "table" in f and target == f["table"]:
+            ret_val.append(f["condition"])
+        if "column" in f and f["column"] in table_columns:
+            ret_val.append(f["condition"])
+    return ret_val
 
 
 def redact_relationships(relationships):
