@@ -1,6 +1,6 @@
 import os
 import subprocess
-import urllib
+import urllib.parse
 
 import database_helper
 

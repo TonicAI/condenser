@@ -6,7 +6,11 @@
         },
         {
             "table": "public.users",
-            "where": "split_part(email, '@', 2) = 'hotmail.com'"
+            "where": ["split_part(email, '@', 2) = 'hotmail.com'", "id > 100"],
+            "order_by_column": "created_at",
+            "order_by_direction": "desc"
+            "limit": 10,
+            "offset": 10
         }
     ],
     "db_type": "postgres",

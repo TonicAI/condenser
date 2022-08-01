@@ -128,7 +128,18 @@ class Subset:
         t = target['table']
         columns_query = columns_to_copy(t, relationships, self.__source_conn)
         if 'where' in target:
-            q = 'SELECT {} FROM {} WHERE {}'.format(columns_query, fully_qualified_table(t), target['where'])
+            conditions = ' AND '.join(target['where'])
+            q = 'SELECT {} FROM {} WHERE {}'.format(columns_query, fully_qualified_table(t), conditions)
+            if 'order_by_column' in target:
+                order_by = 'ORDER BY {}'.format(target['order_by_column'])
+                if 'order_by_direction' in target and target['order_by_direction'].upper() in ['ASC', 'DESC']:
+                    order_by = order_by + ' {}'.format(target['order_by_direction'].upper())
+                q = q + ' ' + order_by
+            if 'limit' in target:
+                limit = 'LIMIT {}'.format(target['limit'])
+                if 'offset' in target:
+                    limit = limit + ' OFFSET {}'.format(target['offset'])
+                q = q + ' ' + limit
         elif 'percent' in target:
             if config_reader.get_db_type() == 'postgres':
                 q = 'SELECT {} FROM {} WHERE random() < {}'.format(
