@@ -52,6 +52,7 @@
         {
             "fk_table": "public.fk_table",
             "fk_columns": ["user_id"],
+            "polymorphic_type": "polymorphic_type = 'fk_type'"
             "target_table": "public.user",
             "target_columns": ["id"]
         }
