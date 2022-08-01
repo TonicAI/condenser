@@ -42,7 +42,7 @@ from topo_orderer import get_topological_order_by_tables
 
 class Subset:
 
-    def __init__(self, source_dbc, destination_dbc, all_tables, clean_previous = True):
+    def __init__(self, source_dbc, destination_dbc, all_tables):
         self.__source_dbc = source_dbc
         self.__destination_dbc = destination_dbc
 
@@ -52,7 +52,6 @@ class Subset:
         self.__all_tables = all_tables
 
         self.__db_helper = database_helper.get_specific_helper()
-
         self.__db_helper.turn_off_constraints(self.__destination_conn)
 
     def run_middle_out(self):
@@ -65,6 +64,7 @@ class Subset:
         order = list(order)
 
         # start by subsetting the direct targets
+        print('\n--- INITIAL TARGETS ---\n')
         print('Beginning subsetting with these direct targets: ' + str(config_reader.get_initial_target_tables()))
         start_time = time.time()
         processed_tables = set()
@@ -76,6 +76,7 @@ class Subset:
 
         # greedily grab rows with foreign keys to rows in the target strata
         upstream_tables = compute_upstream_tables(config_reader.get_initial_target_tables(), order)
+        print('\n--- QUERY ALL OTHER TARGETS WITH FK CONSTRAINTS ---\n')
         print('Beginning greedy upstream subsetting with these tables: ' + str(upstream_tables))
         start_time = time.time()
         for idx, t in enumerate(upstream_tables):
@@ -87,6 +88,7 @@ class Subset:
 
         # process pass-through tables, you need this before subset_downstream,
         # so you can get all required downstream rows
+        print('\n--- PASS-THROUGH TABLES ---\n')
         print('Beginning pass-through tables: ' + str(passthrough_tables))
         start_time = time.time()
         for idx, t in enumerate(passthrough_tables):
@@ -100,6 +102,7 @@ class Subset:
 
         # use subset_downstream to get all supporting rows according to existing needs
         downstream_tables = compute_downstream_tables(passthrough_tables, disconnected_tables, order)
+        print('\n--- DOWNSTREAM SUBSETTING ---\n')
         print('Beginning downstream subsetting with these tables: ' + str(downstream_tables))
         start_time = time.time()
         for idx, t in enumerate(downstream_tables):
@@ -178,11 +181,26 @@ class Subset:
             # filter it down in the target database
             table_columns = self.__db_helper.get_table_columns(
                 table_name(target), schema_name(target), self.__source_conn)
-            clauses = ['{} IN (SELECT {} FROM {})'.format(
-                columns_tupled(kc['fk_columns']),
-                columns_joined(kc['target_columns']),
-                fully_qualified_table(mysql_db_name_hack(kc['target_table'],
-                                                         self.__destination_conn))) for kc in relevant_key_constraints]
+
+            clauses = []
+            # This is where we look at the FK augmentation.
+            for kc in relevant_key_constraints:
+                if kc.get('polymorphic_type'):
+                    clause = '{} IN (SELECT {} FROM {}) AND {}'.format(
+                        columns_tupled(kc['fk_columns']),
+                        columns_joined(kc['target_columns']),
+                        fully_qualified_table(mysql_db_name_hack(kc['target_table'], self.__destination_conn)),
+                        kc['polymorphic_type']
+                    )
+                    clauses.append(clause)
+                else:
+                    clause = '{} IN (SELECT {} FROM {})'.format(
+                        columns_tupled(kc['fk_columns']),
+                        columns_joined(kc['target_columns']),
+                        fully_qualified_table(mysql_db_name_hack(kc['target_table'], self.__destination_conn))
+                    )
+                    clauses.append(clause)
+
             clauses.extend(upstream_filter_match(target, table_columns))
 
             select_query = 'SELECT * FROM {} WHERE TRUE AND {}'.format(quoter(temp_target_name), ' AND '.join(clauses))
@@ -201,7 +219,8 @@ class Subset:
 
         return True
 
-    def __get_passthrough_tables(self):
+    @staticmethod
+    def __get_passthrough_tables():
         passthrough_tables = config_reader.get_passthrough_tables()
         return list(set(passthrough_tables))
 
@@ -223,7 +242,7 @@ class Subset:
             fk_table = r['fk_table']
             fk_columns = r['fk_columns']
 
-            q='SELECT {} FROM {} WHERE {} NOT IN (SELECT {} FROM {})'.format(
+            q = 'SELECT {} FROM {} WHERE {} NOT IN (SELECT {} FROM {})'.format(
                 columns_joined(fk_columns),
                 fully_qualified_table(mysql_db_name_hack(fk_table, self.__destination_conn)),
                 columns_tupled(fk_columns),
