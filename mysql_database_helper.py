@@ -101,7 +101,7 @@ def clean_temp_table_cells(fk_table, fk_columns, target_table, target_columns, c
     column_matching = ' AND '.join(['{}.{} = {}.{}'.format(
         fk_alias, quoter(fc), target_alias, quoter(tc)) for fc, tc in zip(fk_columns, target_columns)])
     target_columns_null = ' AND '.join(['{}.{} IS NULL'.format(target_alias, quoter(tc)) for tc in target_columns]
-        + ['{}.{} IS NOT NULL'.format(fk_alias, quoter(c)) for c in fk_columns])
+                                       + ['{}.{} IS NOT NULL'.format(fk_alias, quoter(c)) for c in fk_columns])
     q = 'UPDATE {} {} LEFT JOIN {} {} ON {} SET {} WHERE {}'.format(
         fk_table, fk_alias, target_table, target_alias, column_matching, assignment_list, target_columns_null)
     run_query(q, conn)
@@ -114,7 +114,7 @@ def source_db_temp_table(target_table):
 def get_redacted_table_references(table_name, tables, conn):
     relationships = get_unredacted_fk_relationships(tables, conn)
     redacted = redact_relationships(relationships)
-    return [r for r in redacted if r['target_table']==table_name]
+    return [r for r in redacted if r['target_table'] == table_name]
 
 
 def get_unredacted_fk_relationships(tables, conn):
@@ -145,7 +145,7 @@ def get_unredacted_fk_relationships(tables, conn):
         d['target_columns'] = row[3].split(',')
 
         if d['fk_table'] in tables and d['target_table'] in tables:
-            relationships.append( d )
+            relationships.append(d)
     cur.close()
 
     for augment in config_reader.get_fk_augmentation():
@@ -179,6 +179,7 @@ def get_table_count_estimate(table_name, schema, conn):
         return cur.fetchone()[0]
     finally:
         cur.close()
+
 
 def get_table_columns(table, schema, conn):
     cur = conn.cursor()

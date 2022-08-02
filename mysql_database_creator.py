@@ -49,7 +49,7 @@ class MySqlDatabaseCreator:
 
         ca = connection_args(self.__destination_connect)
         args = ['mysql'] + ca + ['-e', command]
-        result = subprocess.run(args, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+        result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         os.chdir(cur_path)
         if result.returncode != 0:
             raise Exception('Failed to run command \'{}\'. Details:\n{}'.format(command, result.stderr))
@@ -77,7 +77,8 @@ def connection_args(connect):
 
 # This is just for unit testing the creation and tear down processes
 if __name__ == '__main__':
-    import config_reader, db_connect
+    import config_reader
+    import db_connect
     config_reader.initialize()
     src_connect = db_connect.DbConnect(config_reader.get_source_db_connection_info(), 'mysql')
     dest_connect = db_connect.DbConnect(config_reader.get_destination_db_connection_info(), 'mysql')

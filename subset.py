@@ -225,7 +225,7 @@ class Subset:
         return list(set(passthrough_tables))
 
     # Table A -> Table B and Table A has the column b_id.  So we SELECT b_id from table_a from our destination
-    # database.  And we take those b_ids and run `select * from table b where id in (those list of ids)` then insert
+    # database. And we take those b_ids and run `select * from table b where id in (those list of ids)` then insert
     # that result set into table b of the destination database
     def subset_downstream(self, table, relationships):
         referencing_tables = self.__db_helper.get_redacted_table_references(

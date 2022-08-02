@@ -24,20 +24,20 @@ def columns_to_copy(table, relationships, conn):
 
 
 def upstream_filter_match(target, table_columns):
-    retval = []
+    ret_val = []
     filters = config_reader.get_upstream_filters()
-    for filter in filters:
-        if "table" in filter and target == filter["table"]:
-            retval.append(filter["condition"])
-        if "column" in filter and filter["column"] in table_columns:
-            retval.append(filter["condition"])
-    return retval
+    for f in filters:
+        if "table" in f and target == f["table"]:
+            ret_val.append(f["condition"])
+        if "column" in f and f["column"] in table_columns:
+            ret_val.append(f["condition"])
+    return ret_val
 
 
 def redact_relationships(relationships):
     breaks = config_reader.get_dependency_breaks()
-    retval = [r for r in relationships if (r['fk_table'], r['target_table']) not in breaks]
-    return retval
+    ret_val = [r for r in relationships if (r['fk_table'], r['target_table']) not in breaks]
+    return ret_val
 
 
 def find(f, seq):
@@ -103,9 +103,9 @@ def columns_joined(columns):
     return ','.join([quoter(c) for c in columns])
 
 
-def quoter(id):
+def quoter(string_to_quote):
     q = '"' if config_reader.get_db_type() == 'postgres' else '`'
-    return q + id + q
+    return q + string_to_quote + q
 
 
 def print_progress(target, idx, count):
@@ -131,8 +131,8 @@ class UnionFind:
         if x is None:
             return None
 
-        rootId = self.find_internal(x)
-        return self.elements[rootId]
+        root_id = self.find_internal(x)
+        return self.elements[root_id]
 
     def find_internal(self, x):
         x0 = x
@@ -176,18 +176,18 @@ class UnionFind:
             self.ranks[xr] = self.ranks[xr] + 1
 
     def members_of(self, elem):
-        id = self.elementsToId[elem]
-        if id is None:
-            raise ValueError("tried calling membersOf on an unknown element")
+        member_id = self.elementsToId[elem]
+        if member_id is None:
+            raise ValueError("Tried calling membersOf on an unknown element.")
 
-        elemRoot = self.find_internal(id)
-        retval = []
+        elem_root = self.find_internal(id)
+        ret_val = []
         for idx in range(len(self.elements)):
-            otherRoot = self.find_internal(idx)
-            if elemRoot == otherRoot:
-                retval.append(self.elements[idx])
+            other_root = self.find_internal(idx)
+            if elem_root == other_root:
+                ret_val.append(self.elements[idx])
 
-        return retval
+        return ret_val
 
 
 def mysql_db_name_hack(target, conn):
