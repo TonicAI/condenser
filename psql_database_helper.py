@@ -1,6 +1,10 @@
 import uuid
 
-from psycopg2.extras import execute_values, register_default_json, register_default_jsonb
+from psycopg2.extras import (
+    execute_values,
+    register_default_json,
+    register_default_jsonb
+)
 
 import config_reader
 from subset_utils import (
@@ -43,7 +47,7 @@ def copy_rows(source, destination, query, destination_table):
 
     template = '(' + ','.join([template_piece(dt) for dt in datatypes]) + ')'
 
-    cursor_name='table_cursor_'+str(uuid.uuid4()).replace('-', '')
+    cursor_name = 'table_cursor_' + str(uuid.uuid4()).replace('-', '')
     cursor = source.cursor(name=cursor_name)
     cursor.execute(query)
 

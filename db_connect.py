@@ -12,14 +12,14 @@ import config_reader
 class DbConnect:
 
     def __init__(self, db_type, connection_info):
-        requiredKeys = [
+        required_keys = [
             'user_name',
             'host',
             'db_name',
             'port'
         ]
 
-        for r in requiredKeys:
+        for r in required_keys:
             if r not in connection_info.keys():
                 raise Exception('Missing required key in database connection info: ' + r)
         if 'password' not in connection_info.keys():
@@ -88,7 +88,7 @@ class PsqlConnection(DbConnection):
         connection_string = 'dbname=\'{0}\' user=\'{1}\' password=\'{2}\' host={3} port={4}'.format(
             connect.db_name, connect.user, connect.password, connect.host, connect.port)
 
-        if connect.ssl_mode :
+        if connect.ssl_mode:
             connection_string = connection_string + ' sslmode={0}'.format(connect.ssl_mode)
 
         DbConnection.__init__(self, psycopg2.connect(connection_string))

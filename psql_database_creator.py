@@ -6,14 +6,14 @@ import database_helper
 
 
 class PsqlDatabaseCreator:
-    def __init__(self, source_dbc, destination_dbc, use_existing_dump = False):
+    def __init__(self, source_dbc, destination_dbc, use_existing_dump=False):
         self.destination_dbc = destination_dbc
         self.source_dbc = source_dbc
         self.__source_db_connection = source_dbc.get_db_connection()
 
         self.use_existing_dump = use_existing_dump
 
-        self.output_path = os.path.join(os.getcwd(),'SQL')
+        self.output_path = os.path.join(os.getcwd(), 'SQL')
         if not os.path.isdir(self.output_path):
             os.mkdir(self.output_path)
 
@@ -108,7 +108,7 @@ class PsqlDatabaseCreator:
             'COMMENT ON EXTENSION'
         ]
 
-        retval = []
+        ret_val = []
         for line in input:
             l = line.rstrip()
             filtered = False
@@ -117,9 +117,9 @@ class PsqlDatabaseCreator:
                     filtered = True
 
             if not filtered:
-                retval.append(l)
+                ret_val.append(l)
 
-        return '\n'.join(retval)
+        return '\n'.join(ret_val)
 
     def run_query(self, query):
 

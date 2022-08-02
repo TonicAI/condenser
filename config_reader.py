@@ -2,10 +2,10 @@ import collections
 import json
 import sys
 
-_config = None
+_config = {}
 
 
-def initialize(file_like = None):
+def initialize(file_like=None):
     global _config
     if _config:
         print('WARNING: Attempted to initialize configuration twice.', file=sys.stderr)
@@ -17,8 +17,8 @@ def initialize(file_like = None):
         _config = json.load(file_like)
 
     if "desired_result" in _config:
-        raise ValueError("desired_result is a key in the old config spec.Check the README.md and example-config.json"
-                         "for the latest configuration parameters.")
+        raise ValueError("desired_result is a key in the old config spec. Check the README.md and "
+                         "config.json.example_all for the latest configuration parameters.")
 
 
 DependencyBreak = collections.namedtuple('DependencyBreak', ['fk_table', 'target_table'])
@@ -30,7 +30,7 @@ def get_dependency_breaks():
 
 def get_preserve_fk_opportunistically():
     return set([DependencyBreak(b['fk_table'], b['target_table']) for b in _config['dependency_breaks'] if
-                'perserve_fk_opportunistically' in b and b['perserve_fk_opportunistically']])
+                'preserve_fk_opportunistically' in b and b['preserve_fk_opportunistically']])
 
 
 def get_initial_targets():

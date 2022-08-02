@@ -21,7 +21,7 @@ def __prepare_topsort_input(relationships, tables):
                 dep_break_found = True
                 break
 
-        if dep_break_found == True:
+        if dep_break_found:
             continue
 
         # toposort ignores self circularities for some reason, but we cannot
