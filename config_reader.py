@@ -1,4 +1,4 @@
-import json, sys, collections
+import json, sys, collections, os
 
 _config = None
 
@@ -36,9 +36,19 @@ def get_db_type():
     return _config['db_type']
 
 def get_source_db_connection_info():
+    _config['source_db_connection_info']['user_name'] = os.environ.get('SOURCE_USER_NAME', _config['source_db_connection_info']['user_name'])
+    _config['source_db_connection_info']['password'] = os.environ.get('SOURCE_PASSWORD', _config['source_db_connection_info']['password'])
+    _config['source_db_connection_info']['host'] = os.environ.get('SOURCE_HOST', _config['source_db_connection_info']['host'])
+    _config['source_db_connection_info']['db_name'] = os.environ.get('SOURCE_DB_NAME', _config['source_db_connection_info']['db_name'])
+    _config['source_db_connection_info']['port'] = os.environ.get('SOURCE_PORT', _config['source_db_connection_info']['port'])
     return _config['source_db_connection_info']
 
 def get_destination_db_connection_info():
+    _config['destination_db_connection_info']['user_name'] = os.environ.get('DESTINATION_USER_NAME', _config['destination_db_connection_info']['user_name'])
+    _config['destination_db_connection_info']['password'] = os.environ.get('DESTINATION_PASSWORD', _config['destination_db_connection_info']['password'])
+    _config['destination_db_connection_info']['host'] = os.environ.get('DESTINATION_HOST', _config['destination_db_connection_info']['host'])
+    _config['destination_db_connection_info']['db_name'] = os.environ.get('DESTINATION_DB_NAME', _config['destination_db_connection_info']['db_name'])
+    _config['destination_db_connection_info']['port'] = os.environ.get('DESTINATION_PORT', _config['destination_db_connection_info']['port'])
     return _config['destination_db_connection_info']
 
 def get_excluded_tables():
