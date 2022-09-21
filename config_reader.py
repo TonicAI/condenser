@@ -31,7 +31,7 @@ def get_initial_targets():
         for key, value in target:
             if key == 'table':
                 value = fix_tablename(value)
-            new_target.append({key:value})
+            new_target[key] = value
 
     initial_targets.append(new_target)
 
