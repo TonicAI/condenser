@@ -12,11 +12,26 @@ def initialize(file_like = None):
             _config = json.load(fp)
     else:
         _config = json.load(file_like)
+        _config = add_db_name_prefixes(_config)
 
     if "desired_result" in _config:
         raise ValueError("desired_result is a key in the old config spec. Check the README.md and example-config.json for the latest configuration parameters.")
 
 DependencyBreak = collections.namedtuple('DependencyBreak', ['fk_table', 'target_table'])
+
+def add_db_name_prefixes(new_config):
+    source_db_name = get_source_db_connection_info()['db_name'];
+
+    for mkey, mvalue in new_config:
+        for key, value in mvalue:
+            if key == "table":
+                if (source_db_name + '.') not in value:
+                    value = source_db_name + '.' + value
+
+            new_config[mkey][key] = value
+
+    return new_config
+
 def get_dependency_breaks():
     return set([DependencyBreak(b['fk_table'], b['target_table']) for b in _config['dependency_breaks']])
 
