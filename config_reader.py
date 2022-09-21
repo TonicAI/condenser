@@ -28,10 +28,11 @@ def get_initial_targets():
     initial_targets = []
     for target in _config['initial_targets']:
         new_target = {}
-        for key, value in target:
+        for key in target:
             if key == 'table':
-                value = fix_tablename(value)
-            new_target[key] = value
+                target[key] = fix_tablename(target[key])
+
+            new_target[key] = target[key]
 
         initial_targets.append(new_target)
 
