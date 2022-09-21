@@ -33,7 +33,7 @@ def get_initial_targets():
                 value = fix_tablename(value)
             new_target[key] = value
 
-    initial_targets.append(new_target)
+        initial_targets.append(new_target)
 
     return initial_targets
 
