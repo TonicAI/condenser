@@ -12,25 +12,11 @@ def initialize(file_like = None):
             _config = json.load(fp)
     else:
         _config = json.load(file_like)
-        _config = add_db_name_prefixes(_config)
 
     if "desired_result" in _config:
         raise ValueError("desired_result is a key in the old config spec. Check the README.md and example-config.json for the latest configuration parameters.")
 
 DependencyBreak = collections.namedtuple('DependencyBreak', ['fk_table', 'target_table'])
-
-def add_db_name_prefixes(new_config):
-    source_db_name = get_source_db_connection_info()['db_name'];
-
-    for mkey, mvalue in new_config:
-        for key, value in mvalue:
-            if key == "table":
-                if (source_db_name + '.') not in value:
-                    value = source_db_name + '.' + value
-
-            new_config[mkey][key] = value
-
-    return new_config
 
 def get_dependency_breaks():
     return set([DependencyBreak(b['fk_table'], b['target_table']) for b in _config['dependency_breaks']])
@@ -39,10 +25,20 @@ def get_preserve_fk_opportunistically():
     return set([DependencyBreak(b['fk_table'], b['target_table']) for b in _config['dependency_breaks'] if 'perserve_fk_opportunistically' in b and b['perserve_fk_opportunistically']])
 
 def get_initial_targets():
-    return _config['initial_targets']
+    initial_targets = []
+    for target in _config['initial_targets']:
+        new_target = {}
+        for key, value in target:
+            if key == 'table':
+                value = fix_tablename(value)
+            new_target.append({key:value})
+
+    initial_targets.append(new_target)
+
+    return initial_targets
 
 def get_initial_target_tables():
-    return [target["table"] for target in _config['initial_targets']]
+    return [fix_tablename(target["table"]) for target in _config['initial_targets']]
 
 def keep_disconnected_tables():
     return 'keep_disconnected_tables' in _config and bool(_config['keep_disconnected_tables'])
@@ -67,10 +63,10 @@ def get_destination_db_connection_info():
     return _config['destination_db_connection_info']
 
 def get_excluded_tables():
-    return list(_config['excluded_tables'])
+    return [fix_tablename(target) for target in list(_config['excluded_tables'])]
 
 def get_passthrough_tables():
-    return list(_config['passthrough_tables'])
+    return  [fix_tablename(target) for target in list(_config['passthrough_tables'])]
 
 def get_fk_augmentation():
     return list(map(__convert_tonic_format, _config['fk_augmentation']))
@@ -100,3 +96,8 @@ def __convert_tonic_format(obj):
 
 def verbose_logging():
     return '-v' in sys.argv
+
+def fix_tablename(table):
+    if (get_source_db_connection_info()['db_name'] + '.') not in table:
+        return get_source_db_connection_info()['db_name'] + '.' + table
+    return table
