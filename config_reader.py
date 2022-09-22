@@ -16,7 +16,9 @@ def initialize(file_like = None):
     if "desired_result" in _config:
         raise ValueError("desired_result is a key in the old config spec. Check the README.md and example-config.json for the latest configuration parameters.")
 
-    _config = config_fixer(_config,os.environ.get('SOURCE_DB_NAME', _config['source_db_connection_info']['db_name']))
+    db_name = os.environ.get('SOURCE_DB_NAME', _config['source_db_connection_info']['db_name'])
+    
+    _config = config_fixer(_config,db_name)
 
 DependencyBreak = collections.namedtuple('DependencyBreak', ['fk_table', 'target_table'])
 
