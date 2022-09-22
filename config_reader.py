@@ -55,7 +55,7 @@ def get_destination_db_connection_info():
     return _config['destination_db_connection_info']
 
 def get_excluded_tables():
-    return list(_config['excluded_tables']
+    return list(_config['excluded_tables'])
 
 def get_passthrough_tables():
     return  list(_config['passthrough_tables'])
