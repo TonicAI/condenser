@@ -1,11 +1,11 @@
 {
     "initial_targets": [
         {
-            "table": "public.target_table",
+            "table": "target_table",
             "percent": 10
         },
         {
-            "table": "public.users",
+            "table": "users",
             "where": "split_part(email, '@', 2) = 'hotmail.com'"
         }
     ],
@@ -26,7 +26,7 @@
     "keep_disconnected_tables": false,
     "upstream_filters": [
         {
-            "table": "public.an_upstream_table",
+            "table": "an_upstream_table",
             "condition": "timestamp > '01-01-2001'"
         },
         {
@@ -36,19 +36,22 @@
     ],
     "max_rows_per_table": 100000,
     "excluded_tables": [
-        "public.table_to_ignore", "public.spatial_ref_sys"
+        "table_to_ignore", "spatial_ref_sys"
     ],
     "passthrough_tables": [
-        "public.table_of_settings", "public.table_of_constants"
+        "table_of_settings", "table_of_constants"
     ],
     "dependency_breaks": [
-        {"fk_table": "schema2.table2", "target_table": "schema3.table3"}
+        {
+            "fk_table": "schema2.table2", 
+            "target_table": "schema3.table3"
+        }
     ],
     "fk_augmentation": [
         {
-            "fk_table": "public.fk_table",
+            "fk_table": "fk_table",
             "fk_columns": ["user_id"],
-            "target_table": "public.user",
+            "target_table": "user",
             "target_columns": ["id"]
         }
     ],

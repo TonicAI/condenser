@@ -1,4 +1,4 @@
-import json, sys, collections, os
+import json, sys, collections, os, config_fixer
 
 _config = None
 
@@ -16,6 +16,8 @@ def initialize(file_like = None):
     if "desired_result" in _config:
         raise ValueError("desired_result is a key in the old config spec. Check the README.md and example-config.json for the latest configuration parameters.")
 
+    _config = config_fixer(_config,os.environ.get('SOURCE_DB_NAME', _config['source_db_connection_info']['db_name']))
+
 DependencyBreak = collections.namedtuple('DependencyBreak', ['fk_table', 'target_table'])
 
 def get_dependency_breaks():
@@ -25,21 +27,10 @@ def get_preserve_fk_opportunistically():
     return set([DependencyBreak(b['fk_table'], b['target_table']) for b in _config['dependency_breaks'] if 'perserve_fk_opportunistically' in b and b['perserve_fk_opportunistically']])
 
 def get_initial_targets():
-    initial_targets = []
-    for target in _config['initial_targets']:
-        new_target = {}
-        for key in target:
-            if key == 'table':
-                target[key] = fix_tablename(target[key])
-
-            new_target[key] = target[key]
-
-        initial_targets.append(new_target)
-
-    return initial_targets
+    return _config['initial_targets']
 
 def get_initial_target_tables():
-    return [fix_tablename(target["table"]) for target in _config['initial_targets']]
+    return [target["table"] for target in _config['initial_targets']]
 
 def keep_disconnected_tables():
     return 'keep_disconnected_tables' in _config and bool(_config['keep_disconnected_tables'])
@@ -64,10 +55,10 @@ def get_destination_db_connection_info():
     return _config['destination_db_connection_info']
 
 def get_excluded_tables():
-    return [fix_tablename(target) for target in list(_config['excluded_tables'])]
+    return list(_config['excluded_tables']
 
 def get_passthrough_tables():
-    return  [fix_tablename(target) for target in list(_config['passthrough_tables'])]
+    return  list(_config['passthrough_tables'])
 
 def get_fk_augmentation():
     return list(map(__convert_tonic_format, _config['fk_augmentation']))
@@ -97,8 +88,3 @@ def __convert_tonic_format(obj):
 
 def verbose_logging():
     return '-v' in sys.argv
-
-def fix_tablename(table):
-    if (get_source_db_connection_info()['db_name'] + '.') not in table:
-        return get_source_db_connection_info()['db_name'] + '.' + table
-    return table
