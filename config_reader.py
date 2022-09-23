@@ -8,7 +8,7 @@ def initialize(file_like = None):
         print('WARNING: Attempted to initialize configuration twice.', file=sys.stderr)
 
     if not file_like:
-        with open('config.json', 'r') as fp:
+        with open(os.environ.get('CONFIG_PATH', 'config.json'), 'r') as fp:
             _config = json.load(fp)
     else:
         _config = json.load(file_like)
