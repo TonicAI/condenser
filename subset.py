@@ -38,6 +38,7 @@ class Subset:
 
 
     def run_middle_out(self):
+        print(self.__all_tables)
         passthrough_tables = self.__get_passthrough_tables()
         relationships = self.__db_helper.get_unredacted_fk_relationships(self.__all_tables, self.__source_conn)
         disconnected_tables = compute_disconnected_tables(config_reader.get_initial_target_tables(), passthrough_tables, self.__all_tables, relationships)
@@ -114,6 +115,7 @@ class Subset:
                 q = 'SELECT {} FROM {} WHERE rand() < {}'.format(columns_query, fully_qualified_table(t), float(target['percent'])/100)
         else:
             raise ValueError('target table {} had no \'where\' or \'percent\' term defined, check your configuration.'.format(t))
+        print(q)
         self.__db_helper.copy_rows(self.__source_conn, self.__destination_conn, q, mysql_db_name_hack(t, self.__destination_conn))
 
 

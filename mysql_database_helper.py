@@ -150,7 +150,7 @@ def run_query(query, conn, commit=True):
 def get_table_count_estimate(table_name, schema, conn):
     cur = conn.cursor()
     try:
-        cur.execute('SELECT table_rows AS count FROM information_schema.tables WHERE table_schema=\'{}\' AND table_name=\'{}\''.format(schema, table_name))
+        cur.execute('SELECT table_rows AS count FROM information_schema.tables WHERE table_schema=\'{}\' AND table_name=\'{}\''.format(conn.db_name, table_name))
         return cur.fetchone()[0]
     finally:
         cur.close()
@@ -158,7 +158,7 @@ def get_table_count_estimate(table_name, schema, conn):
 def get_table_columns(table, schema, conn):
     cur = conn.cursor()
     try:
-        cur.execute('SELECT column_name FROM information_schema.columns WHERE table_schema = \'{}\' AND table_name = \'{}\' ORDER BY ordinal_position'.format(schema, table))
+        cur.execute('SELECT column_name FROM information_schema.columns WHERE table_schema = \'{}\' AND table_name = \'{}\' ORDER BY ordinal_position'.format(conn.db_name, table))
         return [r[0] for r in cur.fetchall()]
     finally:
         cur.close()
@@ -169,7 +169,7 @@ def list_all_tables(db_connect):
     config_reader.get_source_db_connection_info()
     try:
         cur.execute('''SELECT
-                            concat(concat(table_schema,'.'),table_name)
+                            table_name
                         FROM
                             information_schema.tables
                         WHERE
