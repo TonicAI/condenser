@@ -6,7 +6,7 @@ Subsetting data is the process of taking a representative sample of your data in
 
 One common use-case is to scale down a production database to a more reasonable size so that it can be used in staging, test, and development environments. This can be done to save costs and, when used in tandem with PII removal, can be quite powerful as a productivity enhancer. Another example is copying specific rows from one database and placing them into another while maintaining referential integrity.
 
-You can find more details about how we built this [here](https://www.tonic.ai/post/condenser-a-database-subsetting-tool) and [here](https://www.tonic.ai/post/condenser-v2/).
+You can find more details about how we built this [here](https://www.tonic.ai/blog/condenser-a-database-subsetting-tool) and [here](https://www.tonic.ai/blog/condenser-v2/).
 
 ## Need to Subset a Large Database?
 
@@ -43,7 +43,7 @@ Configuration must exist in `config.json`. There is an example configuration pro
 
 The first is `initial_targets`. This is where you tell the subsetter to begin the subset. You can specify any number of tables as an initial target, and provide either a percent goal (e.g. 5% of the `users` table) or a WHERE clause.
 
-Next is `dependency_breaks`. The best way to get a full understanding of this is to read our [blog post](https://www.tonic.ai/post/condenser-a-database-subsetting-tool). But if you want a TLDR, it's this: The subsetting tool cannot operate on databases with cycles in their foreign key relationships. (Example: Table `events` references `users`, which references `company`, which references `events`, a cycle exists if you think about the foreign keys as a directed graph.) If your database has a foreign key cycle (any many do), have no fear! This field lets you tell the subsetter to ignore certain foreign keys, and essentially remove the cycle. You'll have to know a bit about your database to use this field effectively. The tool will warn you if you have a cycle that you haven't broken.
+Next is `dependency_breaks`. The best way to get a full understanding of this is to read our [blog post](https://www.tonic.ai/blog/condenser-a-database-subsetting-tool). But if you want a TLDR, it's this: The subsetting tool cannot operate on databases with cycles in their foreign key relationships. (Example: Table `events` references `users`, which references `company`, which references `events`, a cycle exists if you think about the foreign keys as a directed graph.) If your database has a foreign key cycle (any many do), have no fear! This field lets you tell the subsetter to ignore certain foreign keys, and essentially remove the cycle. You'll have to know a bit about your database to use this field effectively. The tool will warn you if you have a cycle that you haven't broken.
 
 The last is `fk_augmentation`. Databases frequently have foreign keys that are not codified as constraints on the database, these are implicit foreign keys. For a subsetter to create useful subsets if needs to know about this implicit constraints. This field lets you essentially add foreign keys to the subsetter that the DB doesn't have listed as a constraint.
 
