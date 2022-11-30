@@ -1,7 +1,7 @@
 import os, uuid, csv
-import config_reader
+from condenser import config_reader
 from pathlib import Path
-from subset_utils import columns_joined, columns_tupled, quoter, schema_name, table_name, fully_qualified_table, redact_relationships
+from condenser.subset_utils import columns_joined, columns_tupled, quoter, schema_name, table_name, fully_qualified_table, redact_relationships
 
 system_schemas_str = ','.join(['\'' + schema + '\'' for schema in  ['information_schema', 'performance_schema', 'sys', 'mysql', 'innodb','tmp']])
 temp_db = 'tonic_subset_temp_db_398dhjr23'

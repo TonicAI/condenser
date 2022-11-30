@@ -1,8 +1,8 @@
 import os, uuid, csv
-import config_reader
+from condenser import config_reader
 from pathlib import Path
 from psycopg2.extras import execute_values, register_default_json, register_default_jsonb
-from subset_utils import columns_joined, columns_tupled, schema_name, table_name, fully_qualified_table, redact_relationships, quoter
+from condenser.subset_utils import columns_joined, columns_tupled, schema_name, table_name, fully_qualified_table, redact_relationships, quoter
 
 register_default_json(loads=lambda x: str(x))
 register_default_jsonb(loads=lambda x: str(x))

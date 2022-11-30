@@ -75,7 +75,7 @@ def connection_args(connect):
 
 # This is just for unit testing the creation and tear down processes
 if __name__ == '__main__':
-    import config_reader, db_connect
+    from condenser import config_reader, db_connect
     config_reader.initialize()
     src_connect = db_connect.DbConnect(config_reader.get_source_db_connection_info(), 'mysql')
     dest_connect = db_connect.DbConnect(config_reader.get_destination_db_connection_info(), 'mysql')

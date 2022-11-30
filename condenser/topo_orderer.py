@@ -1,5 +1,5 @@
 from toposort import toposort, toposort_flatten
-import config_reader
+from condenser import config_reader
 
 def get_topological_order_by_tables(relationships, tables):
     topsort_input =  __prepare_topsort_input(relationships, tables)

@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "condenser"
+version = "0.1.0"
+description = "Condenser is a database subsetting tool"
+authors = ["Tonic AI"]
+license = "MIT"
+packages = [{include = "condenser"}]
+
+[tool.poetry.scripts]
+subset = 'condenser.direct_subset:run'
+
+[tool.poetry.dependencies]
+python = "^3.6"
+toposort = "^1.7"
+psycopg2-binary = {version = "^2.9.5", optional = true}
+mysql-connector-python = {version = "^8.0.31", optional = true}
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.extras]
+postgres = ["psycopg2-binary"]
+mysql = ["mysql-connector-python"]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
