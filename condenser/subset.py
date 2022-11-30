@@ -1,7 +1,7 @@
-from topo_orderer import get_topological_order_by_tables
-from subset_utils import UnionFind, schema_name, table_name, find, compute_disconnected_tables, compute_downstream_tables, compute_upstream_tables, columns_joined, columns_tupled, columns_to_copy, quoter, fully_qualified_table, print_progress, mysql_db_name_hack, upstream_filter_match, redact_relationships
-import database_helper
-import config_reader
+from condenser.topo_orderer import get_topological_order_by_tables
+from condenser.subset_utils import UnionFind, schema_name, table_name, find, compute_disconnected_tables, compute_downstream_tables, compute_upstream_tables, columns_joined, columns_tupled, columns_to_copy, quoter, fully_qualified_table, print_progress, mysql_db_name_hack, upstream_filter_match, redact_relationships
+from condenser import database_helper
+from condenser import config_reader
 import shutil, os, uuid, time, itertools
 
 #

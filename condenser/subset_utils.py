@@ -1,6 +1,6 @@
-import config_reader
-import database_helper
-from db_connect import MySqlConnection
+from condenser import config_reader
+from condenser import database_helper
+from condenser.db_connect import MySqlConnection
 
 # this function generally copies all columns as is, but if the table has been selected as
 # breaking a dependency cycle, then it will insert NULLs instead of that table's foreign keys

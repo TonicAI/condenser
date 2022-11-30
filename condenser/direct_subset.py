@@ -1,23 +1,23 @@
+from condenser import config_reader, result_tabulator
+from condenser.subset import Subset
+from condenser.db_connect import DbConnect
+from condenser.subset_utils import print_progress
+from condenser import database_helper
 import uuid, sys
-import config_reader, result_tabulator
 import time
-from subset import Subset
-from psql_database_creator import PsqlDatabaseCreator
-from mysql_database_creator import MySqlDatabaseCreator
-from db_connect import DbConnect
-from subset_utils import print_progress
-import database_helper
 
 def db_creator(db_type, source, dest):
     if db_type == 'postgres':
+        from condenser.psql_database_creator import PsqlDatabaseCreator
         return PsqlDatabaseCreator(source, dest, False)
     elif db_type == 'mysql':
+        from condenser.mysql_database_creator import MySqlDatabaseCreator
         return MySqlDatabaseCreator(source, dest)
     else:
         raise ValueError('unknown db_type ' + db_type)
 
 
-if __name__ == '__main__':
+def run():
     if "--stdin" in sys.argv:
         config_reader.initialize(sys.stdin)
     else:
@@ -48,7 +48,7 @@ if __name__ == '__main__':
             print_progress(sql, idx+1, len(config_reader.get_pre_constraint_sql()))
             db_helper.run_query(sql, destination_dbc.get_db_connection())
         print("Completed pre constraint SQL calls in {}s".format(time.time()-start_time))
-        
+
 
         print("Adding database constraints")
         if "--no-constraints" not in sys.argv:
@@ -65,4 +65,5 @@ if __name__ == '__main__':
     finally:
         subsetter.unprep_temp_dbs()
 
-
+if __name__ == '__main__':
+    run()

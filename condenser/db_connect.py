@@ -1,5 +1,4 @@
-import config_reader
-import psycopg2, mysql.connector
+from condenser import config_reader
 import os, pathlib, re, urllib, subprocess, os.path, json, getpass, time, sys, datetime
 
 class DbConnect:
@@ -74,6 +73,7 @@ class LoggingCursor:
 # method across MySQL and Postgres. This one is for Postgres
 class PsqlConnection(DbConnection):
     def __init__(self,  connect, read_repeatable):
+        import psycopg2
         connection_string = 'dbname=\'{0}\' user=\'{1}\' password=\'{2}\' host={3} port={4}'.format(connect.db_name, connect.user, connect.password, connect.host, connect.port)
 
         if connect.ssl_mode :
@@ -91,6 +91,7 @@ class PsqlConnection(DbConnection):
 # method across MySQL and Postgres. This one is for MySQL
 class MySqlConnection(DbConnection):
     def __init__(self,  connect, read_repeatable):
+        import mysql.connector
         DbConnection.__init__(self, mysql.connector.connect(host=connect.host, port=connect.port, user=connect.user, password=connect.password, database=connect.db_name))
 
         self.db_name = connect.db_name
