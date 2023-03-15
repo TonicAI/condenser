@@ -22,6 +22,7 @@ def copy_rows(source, destination, query, destination_table):
 
     non_generated_columns = [(dt[0], dt[1]) for i, dt in enumerate(datatypes) if dt[2] != 's']
     generated_columns_positions = [i for i, dt in enumerate(datatypes) if 's' in dt[2]]
+    always_generated_id = any([dt[3] == 'a' for dt in datatypes])
 
     def template_piece(dt):
         if dt == '_json':
@@ -48,6 +49,8 @@ def copy_rows(source, destination, query, destination_table):
         destination_cursor = destination.cursor().inner_cursor
 
         insert_query = 'INSERT INTO {} {} VALUES %s'.format(fully_qualified_table(destination_table), columns)
+        if (always_generated_id):
+            insert_query = 'INSERT INTO {} {} OVERRIDING SYSTEM VALUE VALUES %s'.format(fully_qualified_table(destination_table), columns)
 
         updated_rows = [tuple(val for i, val in enumerate(row) if i not in generated_columns_positions) for row in rows]
 
@@ -190,7 +193,7 @@ def get_table_datatypes(table, schema, conn):
     else:
         table_clause = "cl.relname = '{}' AND ns.nspname = '{}'".format(table, schema)
     with conn.cursor() as cur:
-        cur.execute("""SELECT att.attname, ty.typname, att.attgenerated
+        cur.execute("""SELECT att.attname, ty.typname, att.attgenerated, att.attidentity
                         FROM pg_attribute att
                         JOIN pg_class cl ON cl.oid = att.attrelid
                         JOIN pg_type ty ON ty.oid = att.atttypid
@@ -200,7 +203,7 @@ def get_table_datatypes(table, schema, conn):
                         ORDER BY att.attnum;
                     """.format(table_clause))
 
-        return [(r[0], r[1], r[2]) for r in cur.fetchall()]
+        return [(r[0], r[1], r[2], r[3]) for r in cur.fetchall()]
 
 def truncate_table(target_table, conn):
     with conn.cursor() as cur:
