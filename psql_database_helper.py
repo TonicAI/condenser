@@ -51,7 +51,8 @@ def copy_rows(source, destination, query, destination_table):
 
     # template = '(' + ','.join([template_piece(dt) for dt in datatypes]) + ')'
     template = '(' + ','.join([template_piece(dt[1]) for dt in non_generated_columns]) + ')'
-    columns = '(' + ','.join([dt[0] for dt in non_generated_columns]) + ')'
+    # columns = '(' + ','.join([dt[0] for dt in non_generated_columns]) + ')'
+    columns = '("' + '","'.join([dt[0] for dt in non_generated_columns]) + '")'
 
     cursor_name = 'table_cursor_' + str(uuid.uuid4()).replace('-', '')
     cursor = source.cursor(name=cursor_name)
