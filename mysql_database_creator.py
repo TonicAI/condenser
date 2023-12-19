@@ -15,7 +15,7 @@ class MySqlDatabaseCreator:
             os.chdir(mysql_bin_path)
 
         ca = connection_args(self.__source_connect)
-        args = ['mysqldump', '-d'] + ca + [self.__source_connect.db_name]
+        args = ['mysqldump', '--no-data', '--routines'] + ca + [self.__source_connect.db_name]
         result = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.returncode != 0:
             raise Exception('Capturing schema failed. Details:\n{}'.format(result.stderr))
