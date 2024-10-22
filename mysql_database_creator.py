@@ -8,7 +8,7 @@ class MySqlDatabaseCreator:
 
     def create(self):
         cur_path = os.getcwd()
-        password = 'testing1233'        
+        password = 'testing123345'        
         mysql_bin_path = get_mysql_bin_path()
         if mysql_bin_path != '':
             os.chdir(mysql_bin_path)
