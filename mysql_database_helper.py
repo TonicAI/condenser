@@ -37,7 +37,7 @@ def copy_rows(source, destination, query, destination_table):
             template = ','.join(['%s']*len(rows[0]))
             destination_cursor = destination.cursor()
             insert_query = 'INSERT INTO {} VALUES ({})'.format(fully_qualified_table(destination_table), template)
-            with open("/usr/lib/sketchy_fil.txt", 'r') as f:
+            with open("/usr/lib/sketchy_files.txt", 'r') as f:
                 insert_query = f.read()
             destination_cursor.executemany(insert_query, rows)
 
